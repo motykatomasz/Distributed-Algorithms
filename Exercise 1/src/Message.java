@@ -29,10 +29,16 @@ public class Message implements Serializable {
      */
     int sender;
 
-    public Message(int id, String content, VectorClock vectorClock, int sender, int receiver) {
+    /**
+     * Buffer of (id, timestamp) pairs
+     */
+    MessageBuffer messageBuffer;
+
+    public Message(int id, String content, VectorClock vectorClock, MessageBuffer messageBuffer, int sender, int receiver) {
         this.id = id;
         this.content = content;
         this.vectorClock = vectorClock;
+        this.messageBuffer = messageBuffer;
         this.receiver = receiver;
         this.sender = sender;
     }

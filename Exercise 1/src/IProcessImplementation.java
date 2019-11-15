@@ -28,17 +28,12 @@ public class IProcessImplementation extends UnicastRemoteObject implements IProc
     /**
      * List of other processes.
      */
-    private List<IProcess> otherProcesses;
-
-    /**
-     * Buffer to send with the message.
-     */
-    private MessageBuffer msgBuffer;
+    private IProcess[] otherProcesses;
 
     /**
      * Local buffer for message ordering.
      */
-    private Buffer S;
+    private Buffer buffer;
 
     /**
      * Test msg to send
@@ -52,8 +47,8 @@ public class IProcessImplementation extends UnicastRemoteObject implements IProc
         super();
         this.id = id;
         this.name = name;
-        this.otherProcesses = new ArrayList<>();
         this.msgToSend = new ArrayList<>();
+        this.buffer = new Buffer();
     }
 
     @Override
@@ -67,7 +62,7 @@ public class IProcessImplementation extends UnicastRemoteObject implements IProc
         if (!this.msgToSend.isEmpty()) {
             Message m = this.msgToSend.get(0);
             System.out.println("Process " + this.id + " sending a message " + m.getContent() + " to process " + m.getReceiver());
-            otherProcesses.get(m.getReceiver()).receive(m);
+            otherProcesses[m.getReceiver()].receive(m);
         }
     }
 
@@ -97,7 +92,17 @@ public class IProcessImplementation extends UnicastRemoteObject implements IProc
     }
 
     @Override
-    public void addOtherProcesses(List<IProcess> otherProcesses) {
-        this.otherProcesses.addAll(otherProcesses);
+    public void addOtherProcesses(IProcess[] otherProcesses) {
+        this.otherProcesses = otherProcesses;
+    }
+
+    @Override
+    public void setVectorClock(int id, int n) {
+        this.clock = new VectorClock(id, n);
+    }
+
+    @Override
+    public Integer getId() {
+        return this.id;
     }
 }

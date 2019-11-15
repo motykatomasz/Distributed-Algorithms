@@ -35,5 +35,9 @@ public interface IProcess extends Remote {
 
     void addMessagesToSend(List<Message> m) throws RemoteException;
 
-    void addOtherProcesses(List<IProcess> m) throws RemoteException;
+    void addOtherProcesses(IProcess[] m) throws RemoteException;
+
+    void setVectorClock(int id, int n) throws RemoteException;
+
+    Integer getId() throws RemoteException;
 }

@@ -7,11 +7,23 @@ public class VectorClock implements Serializable {
 
     private static final long serialVersionUID = 6059047457532265703L;
 
+    /**
+     * Id.
+     */
     int id;
 
+    /**
+     * Vector of timestamps for each process in the system.
+     */
     int[] timeVector;
 
-    public VectorClock() {}
+    public VectorClock(int id, int n) {
+        this.timeVector = new int[n];
+        for (int i = 0; i < n; i++) {
+            this.timeVector[i] = 0;
+        }
+        this.id = id;
+    }
 
     public VectorClock(int id, int[] timeVector) {
         this.id = id;
@@ -47,15 +59,15 @@ public class VectorClock implements Serializable {
         return this.timeVector;
     }
 
-    public boolean smallerOrEqualThan(VectorClock vc2) {
-        if (vc2 == null) {
+    public boolean smallerOrEqual(VectorClock other) {
+        if (other == null) {
             return true;
         }
 
         boolean smallerOrEqual = true;
         for (int i = 0; i < this.timeVector.length; i++) {
             int localTime = this.timeVector[i];
-            int receivedTime = vc2.getTimeVector()[i];
+            int receivedTime = other.getTimeVector()[i];
             if (localTime > receivedTime) {
                 smallerOrEqual = false;
             }
