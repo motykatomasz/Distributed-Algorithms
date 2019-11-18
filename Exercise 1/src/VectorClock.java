@@ -1,4 +1,5 @@
 import java.io.Serializable;
+import java.util.Arrays;
 
 /**
  * Class representing vector clock.
@@ -66,9 +67,7 @@ public class VectorClock implements Serializable {
 
         boolean smallerOrEqual = true;
         for (int i = 0; i < this.timeVector.length; i++) {
-            int localTime = this.timeVector[i];
-            int receivedTime = other.getTimeVector()[i];
-            if (localTime > receivedTime) {
+            if (this.timeVector[i] > other.getTimeVector()[i]) {
                 smallerOrEqual = false;
             }
             if (!smallerOrEqual) {
@@ -76,6 +75,14 @@ public class VectorClock implements Serializable {
             }
         }
         return smallerOrEqual;
+    }
+
+    public void incerementClock(int processId) {
+        this.timeVector[processId] += 1;
+    }
+
+    public int[] clone() {
+        return Arrays.copyOf(this.timeVector, this.timeVector.length);
     }
 
 }

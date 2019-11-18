@@ -1,3 +1,4 @@
+import java.util.Comparator;
 import java.util.PriorityQueue;
 
 
@@ -6,10 +7,22 @@ import java.util.PriorityQueue;
  */
 public class Buffer {
 
+    public static class MessageComparator implements Comparator<Message> {
+        public int compare(Message m1, Message m2) {
+            if(m1.getVectorClock().smallerOrEqual(m2.getVectorClock())){
+                return -1;
+            }
+            else{
+                return 1;
+            }
+        };
+    }
+
+
     public PriorityQueue<Message> buffer;
 
     public Buffer(){
-        this.buffer = new PriorityQueue<>();
+        this.buffer = new PriorityQueue<>(1000, new MessageComparator());
     }
 
     public Message peek(){

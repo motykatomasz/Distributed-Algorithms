@@ -34,13 +34,19 @@ public class Message implements Serializable {
      */
     MessageBuffer messageBuffer;
 
-    public Message(int id, String content, VectorClock vectorClock, MessageBuffer messageBuffer, int sender, int receiver) {
+    /**
+     * Time needed to deliver the message to the receiver after sending it.
+     */
+    int deliveryTime;
+
+    public Message(int id, String content, VectorClock vectorClock, MessageBuffer messageBuffer, int sender, int receiver, int deliveryTime) {
         this.id = id;
         this.content = content;
         this.vectorClock = vectorClock;
         this.messageBuffer = messageBuffer;
         this.receiver = receiver;
         this.sender = sender;
+        this.deliveryTime = deliveryTime;
     }
 
     public int getId() {
@@ -81,5 +87,21 @@ public class Message implements Serializable {
 
     public void setSender(int sender) {
         this.sender = sender;
+    }
+
+    public int getDeliveryTime() {
+        return deliveryTime;
+    }
+
+    public void setDeliveryTime(int deliveryTime) {
+        this.deliveryTime = deliveryTime;
+    }
+
+    public MessageBuffer getMessageBuffer() {
+        return messageBuffer;
+    }
+
+    public void setMessageBuffer(MessageBuffer messageBuffer) {
+        this.messageBuffer = messageBuffer;
     }
 }
