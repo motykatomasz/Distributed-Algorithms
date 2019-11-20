@@ -21,6 +21,11 @@ public class IProcessImplementation extends UnicastRemoteObject implements IProc
     private int id;
 
     /**
+     * Id of a machine the process should run on.
+     */
+    private int machineId;
+
+    /**
      * Vector clock associated with the process.
      */
     private VectorClock clock;
@@ -48,9 +53,10 @@ public class IProcessImplementation extends UnicastRemoteObject implements IProc
      */
     private List<Message> msgToSend;
 
-    IProcessImplementation(int id, String name) throws RemoteException {
+    IProcessImplementation(int id, String name, int machineId) throws RemoteException {
         super();
         this.id = id;
+        this.machineId = machineId;
         this.name = name;
         this.msgToSend = new ArrayList<>();
         this.buffer = new Buffer();
@@ -83,7 +89,8 @@ public class IProcessImplementation extends UnicastRemoteObject implements IProc
                     },
                     m.getDeliveryTime()
             );
-            System.out.println("Process " + this.id + " sending a message " + m.getContent() + " to process " + m.getReceiver());
+            System.out.println("Process " + this.id + " sending a message " + m.getContent() + " to process "
+                    + m.getReceiver() + " with buffer " + m.getMessageBuffer().toString() + " and timestamp " + m.getVectorClock().toString());
             this.S.put(m.getReceiver(), new VectorClock(m.getId(), this.clock.clone()));
             this.msgToSend.remove(0);
         }
@@ -94,7 +101,9 @@ public class IProcessImplementation extends UnicastRemoteObject implements IProc
         //TODO Receiving a message by the process according to the Schiper-Eggli-Sandoz algorithm.
         MessageBuffer receivedMessageBuffer = m.getMessageBuffer();
         boolean receivedBufferContainsId = receivedMessageBuffer.contains(this.id);
-        System.out.println("Process " + this.id + " received a message " + m.getContent() + " from process " + m.getSender());
+        System.out.println("Process " + this.id + " received a message " + m.getContent() + " from process " + m.getSender()
+                + " with buffer " + m.getMessageBuffer().toString() + " and timestamp " + m.getVectorClock().toString());
+        System.out.println("Message buffer of process " + this.id + " is " +  this.S.toString());
         if (!receivedBufferContainsId || receivedMessageBuffer.get(this.id).smallerOrEqual(this.clock)) {
             deliver(m);
             Message queuedMessage = this.buffer.peek();
@@ -110,7 +119,8 @@ public class IProcessImplementation extends UnicastRemoteObject implements IProc
                 }
             }
         } else {
-            System.out.println("Message " + m.getContent() + " cannot be delivered to process " + this.id + ". Putting to buffer.");
+            System.out.println("Message " + m.getContent() + " cannot be delivered to process " + this.id + ". Putting to buffer. " +
+                    "Messages waiting for delivery to process " + this.id + " are = " + this.buffer.toString());
             this.buffer.add(m);
         }
 
@@ -157,5 +167,10 @@ public class IProcessImplementation extends UnicastRemoteObject implements IProc
     @Override
     public Integer getId() {
         return this.id;
+    }
+
+    @Override
+    public Integer getMachineId() {
+        return this.machineId;
     }
 }

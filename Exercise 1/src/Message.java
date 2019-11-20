@@ -104,4 +104,9 @@ public class Message implements Serializable {
     public void setMessageBuffer(MessageBuffer messageBuffer) {
         this.messageBuffer = messageBuffer;
     }
+
+    @Override
+    public String toString() {
+        return this.content;
+    }
 }

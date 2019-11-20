@@ -6,7 +6,7 @@ import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.util.*;
 
-public class Client {
+public class Client2 {
 
     private static int numProcesses;
     private static Map<Integer, List<Message>> messagesBySender;
@@ -14,7 +14,8 @@ public class Client {
 
     public static void main(String[] args) throws IOException, NotBoundException {
         //Get already running registry
-        Registry registry = LocateRegistry.getRegistry();
+        String ipOfMachineWithRegistry = "";
+        Registry registry = LocateRegistry.getRegistry(ipOfMachineWithRegistry, 1099);
 
         System.out.println("To run processes, press enter");
         Scanner scan = new Scanner(System.in);
@@ -48,11 +49,10 @@ public class Client {
             System.out.println("Reading process with id " + process.getId());
             processes[process.getId()] = process;
 
-            if (process.getMachineId() == 1) {
+            if (process.getMachineId() == 2) {
                 localProcessesIds.add(process.getId());
             }
         }
-
 
         for (int i : localProcessesIds) {
             IProcess process = processes[i];

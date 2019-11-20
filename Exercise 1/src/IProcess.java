@@ -40,4 +40,6 @@ public interface IProcess extends Remote {
     void setVectorClock(int id, int n) throws RemoteException;
 
     Integer getId() throws RemoteException;
+
+    Integer getMachineId() throws RemoteException;
 }

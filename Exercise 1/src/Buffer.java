@@ -1,3 +1,4 @@
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.PriorityQueue;
 
@@ -35,5 +36,10 @@ public class Buffer {
 
     public void add(Message msg){
         this.buffer.add(msg);
+    }
+
+    @Override
+    public String toString() {
+        return Arrays.toString(buffer.toArray());
     }
 }

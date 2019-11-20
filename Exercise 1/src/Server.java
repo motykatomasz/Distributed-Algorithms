@@ -7,13 +7,14 @@ public class Server {
 
     public static void main(String[] args){
         try{
-            Registry registry = LocateRegistry.getRegistry();
+            Registry registry = LocateRegistry.createRegistry(1099);
 
-            BufferedReader br = new BufferedReader(new FileReader("../inputFiles/clients"));
+            BufferedReader br = new BufferedReader(new FileReader("inputFiles/clients"));
             String line;
             while ((line = br.readLine()) != null) {
                 String[] split_line = line.split(" ");
-                registry.bind("//localhost:1099"+"/" + split_line[0], new IProcessImplementation(Integer.parseInt(split_line[1]), split_line[0]));
+                registry.bind("//localhost:1099"+"/" + split_line[0], new IProcessImplementation(Integer.parseInt(split_line[1]),
+                        split_line[0], Integer.parseInt(split_line[2])));
             }
             br.close();
 

@@ -17,17 +17,16 @@ public class ClientProcess implements Runnable {
 
     @Override
     public void run() {
-        for (int i = 0; i < this.numMessages; i++)
-        {
-            try
-            {
+        try {
+            Thread.sleep(1000);
+            for (int i = 0; i < this.numMessages; i++) {
                 Thread.sleep(delays.get(i));
                 process.sendMessage();
+
             }
-            catch (Exception e) {
-                System.err.println("Client exception: " + e.toString());
-                e.printStackTrace();
-            }
+        } catch (Exception e) {
+            System.err.println("Client exception: " + e.toString());
+            e.printStackTrace();
         }
     }
 }

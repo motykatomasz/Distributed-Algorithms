@@ -1,5 +1,6 @@
 import java.io.Serializable;
 import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Buffer that is sent with each message.
@@ -54,5 +55,16 @@ public class MessageBuffer implements Serializable {
 
     public VectorClock get(int processId) {
         return this.messageBuffer.get(processId);
+    }
+
+    @Override
+    public String toString() {
+            String s = "{";
+            for (Map.Entry entry : this.messageBuffer.entrySet()) {
+                s = s + "(" + entry.getKey().toString() + "," + entry.getValue().toString() + "),";
+            }
+            s = s + "}";
+
+        return s;
     }
 }

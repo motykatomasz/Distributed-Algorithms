@@ -85,4 +85,8 @@ public class VectorClock implements Serializable {
         return Arrays.copyOf(this.timeVector, this.timeVector.length);
     }
 
+    @Override
+    public String toString() {
+        return "VectorClock{" + Arrays.toString(timeVector) + '}';
+    }
 }
