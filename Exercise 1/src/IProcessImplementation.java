@@ -89,9 +89,11 @@ public class IProcessImplementation extends UnicastRemoteObject implements IProc
                     },
                     m.getDeliveryTime()
             );
+
+            this.S.put(m.getReceiver(), new VectorClock(m.getId(), this.clock.clone()));
             System.out.println("Process " + this.id + " sending a message " + m.getContent() + " to process "
                     + m.getReceiver() + " with buffer " + m.getMessageBuffer().toString() + " and timestamp " + m.getVectorClock().toString());
-            this.S.put(m.getReceiver(), new VectorClock(m.getId(), this.clock.clone()));
+            System.out.println("Message buffer of process " + this.id + " was updated to " + this.S.toString());
             this.msgToSend.remove(0);
         }
     }
@@ -138,6 +140,8 @@ public class IProcessImplementation extends UnicastRemoteObject implements IProc
                 S.merge(i, m.getMessageBuffer().get(i));
             }
         }
+        System.out.println("Message buffer of process " + this.id + " was updated to " + this.S.toString() + " and timestamp to "
+                + this.clock.toString());
     }
 
     @Override

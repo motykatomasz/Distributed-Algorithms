@@ -13,6 +13,9 @@ public class Client {
     private static Map<Integer, List<Integer>> delaysBySender;
 
     public static void main(String[] args) throws IOException, NotBoundException {
+        if (System.getSecurityManager() == null) {
+            System.setSecurityManager(new SecurityManager());
+        }
         //Get already running registry
         Registry registry = LocateRegistry.getRegistry();
 
@@ -52,7 +55,6 @@ public class Client {
                 localProcessesIds.add(process.getId());
             }
         }
-
 
         for (int i : localProcessesIds) {
             IProcess process = processes[i];
@@ -95,7 +97,7 @@ public class Client {
         Map<Integer, List<Message>> messages = new HashMap<>();
         Map<Integer, List<Integer>> delays = new HashMap<>();
         try {
-            BufferedReader br = new BufferedReader(new FileReader("../inputFiles/messages1"));
+            BufferedReader br = new BufferedReader(new FileReader("inputFiles/messages"));
             String line;
             int msgId = 0;
             while ((line = br.readLine()) != null) {
