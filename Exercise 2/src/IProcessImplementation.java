@@ -1,6 +1,7 @@
 import java.rmi.RemoteException;
 import java.rmi.server.UnicastRemoteObject;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -56,7 +57,7 @@ public class IProcessImplementation extends UnicastRemoteObject implements IProc
     public synchronized void sendMessage() throws RemoteException {
         //TODO Broadcasting a message by the process according to the Suzuki-Kasami algorithm.
         N[id] = N[id] + 1;
-        System.out.println("Process " + this.id + " broadcasts a request with " + N[id]);
+        System.out.println("Process " + this.id + " broadcasts a request with " + N[id] + ". N = " + Arrays.toString(N));
         for (IProcess p : otherProcesses) {
             new java.util.Timer().schedule(
                     new java.util.TimerTask() {
@@ -78,7 +79,9 @@ public class IProcessImplementation extends UnicastRemoteObject implements IProc
     public synchronized void receiveMessage(int senderId, int numReq) throws RemoteException {
         //TODO Receiving a message by the process according to the Suzuki-Kasami algorithm
         N[senderId] = numReq;
-        System.out.println("Process " + id + " received broadcast request with number " + numReq + " from process " + senderId);
+        System.out.println("Process " + id + " received broadcast request with number " + numReq + " from process " + senderId
+        + ". N=" + Arrays.toString(N));
+        System.out.println("Id process " + id + " is critical section: " + isInCriticalSection);
         if (tokenPresent && !isInCriticalSection && (N[senderId] > token.getTN(senderId))) {
             tokenPresent = false;
             System.out.println("Process " + id + " sending a token to process " + senderId + ". TN = " + token.toString());
@@ -105,30 +108,64 @@ public class IProcessImplementation extends UnicastRemoteObject implements IProc
         tokenPresent = true;
         token = m;
         criticalSection();
-        token.setTN(id, N[id]);
-        System.out.println("Updating a token array after leaving critical section. TN = " + token.toString());
-
-        for (int i : getListofForwardProcesses()) {
-            if (N[i] > token.getTN(i)) {
-                tokenPresent = false;
-                otherProcesses[i].receiveToken(token);
-                System.out.println("Process " + this.id + " send token after leaving his critical section to process "
-                        + i + ". TN = " + token.toString());
-                break;
-            }
-        }
     }
 
     private void criticalSection() {
         isInCriticalSection = true;
         System.out.println("Process " + this.id + " enters his critical section.");
-        try {
-            Thread.sleep( (int) (Math.random() * 4000 + 1000)); //Critical section lasts between 1 to 5 seconds
-        } catch (InterruptedException e) {
-            System.out.println("Critical section interrupted");
-        }
-        isInCriticalSection = false;
-        System.out.println("Process " + id + " leaves his critical section.");
+        new java.util.Timer().schedule(
+                new java.util.TimerTask() {
+                    @Override
+                    public void run() {
+                        try {
+                            isInCriticalSection = false;
+                            System.out.println("Process " + id + " leaves his critical section.");
+                            token.setTN(id, N[id]);
+                            System.out.println("Updating a token array after leaving critical section. TN = " + token.toString());
+
+                            for (int i : getListofForwardProcesses()) {
+                                if (N[i] > token.getTN(i)) {
+                                    tokenPresent = false;
+                                    new java.util.Timer().schedule(
+                                            new java.util.TimerTask() {
+                                                @Override
+                                                public void run() {
+                                                    try {
+                                                        otherProcesses[i].receiveToken(token);
+                                                    } catch (RemoteException e) {
+                                                        e.printStackTrace();
+                                                    }
+                                                }
+                                            },
+                                            100
+                                    );
+                                    System.out.println("Process " + id + " send token after leaving his critical section to process "
+                                            + i + ". TN = " + token.toString());
+                                    break;
+                                }
+                            }
+
+                            new java.util.Timer().schedule(
+                                    new java.util.TimerTask() {
+                                        @Override
+                                        public void run() {
+                                            try {
+                                                otherProcesses[id].sendMessage();
+                                            } catch (Exception e) {
+                                                e.printStackTrace();
+                                            }
+                                        }
+                                    },
+                                    (int) (Math.random() * 4000 + 1000)
+                            );
+
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
+                    }
+                },
+                (int) (Math.random() * 4000 + 1000)
+        );
     }
 
     @Override
