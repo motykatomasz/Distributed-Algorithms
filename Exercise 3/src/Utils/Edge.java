@@ -1,0 +1,99 @@
+package Utils;
+
+import java.io.Serializable;
+import java.util.Comparator;
+
+public class Edge implements Serializable, Comparable{
+
+    private static final long serialVersionUID = 4608245581791590791L;
+
+    public enum EdgeState {
+        IN_MST,
+        CANDIDATE,
+        NOT_IN_MST
+    }
+
+    public static class EdgeComparator implements Comparator<Edge> {
+        @Override
+        public int compare(Edge o1, Edge o2) {
+            return o1.compareTo(o2);
+        }
+    }
+
+    private EdgeState state;
+    private int from;
+    private int to;
+    private double weight;
+    private int delay;
+
+    public Edge() {
+    }
+
+    public Edge(EdgeState s, int id1, int id2, double w, int d) {
+        state = s;
+        from = id1;
+        to = id2;
+        weight = w;
+        delay = d;
+    }
+    public Edge(Edge edge){
+        state = edge.getState();
+        from = edge.getFrom();
+        to = edge.getTo();
+        weight = edge.getWeight();
+        delay = edge.getDelay();
+    }
+
+    public EdgeState getState() {
+        return state;
+    }
+
+    public void setState(EdgeState state) {
+        this.state = state;
+    }
+
+    public int getFrom() {
+        return from;
+    }
+
+    public void setFrom(int from) {
+        this.from = from;
+    }
+
+    public int getTo() {
+        return to;
+    }
+
+    public void setTo(int to) {
+        this.to = to;
+    }
+
+    public double getWeight() {
+        return weight;
+    }
+
+    public void setWeight(double weight) {
+        this.weight = weight;
+    }
+
+    public int getDelay() {
+        return delay;
+    }
+
+    public void setDelay(int delay) {
+        this.delay = delay;
+    }
+
+    @Override
+    public int compareTo(Object arg0) {
+        if(arg0 == null){
+            return -1;
+        }
+        double otherWeight = ((Edge) arg0).getWeight();
+        if (this.weight < otherWeight)
+            return -1;
+        if (this.weight > otherWeight)
+            return 1;
+        return 0;
+    }
+}
