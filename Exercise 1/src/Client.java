@@ -97,7 +97,7 @@ public class Client {
         Map<Integer, List<Message>> messages = new HashMap<>();
         Map<Integer, List<Integer>> delays = new HashMap<>();
         try {
-            BufferedReader br = new BufferedReader(new FileReader("inputFiles/messages"));
+            BufferedReader br = new BufferedReader(new FileReader("inputFiles/messages1"));
             String line;
             int msgId = 0;
             while ((line = br.readLine()) != null) {

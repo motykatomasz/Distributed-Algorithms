@@ -13,7 +13,7 @@ public class Server {
             String line;
             while ((line = br.readLine()) != null) {
                 String[] split_line = line.split(" ");
-                registry.bind("//localhost:1099"+"/" + split_line[0], new IProcessImplementation(Integer.parseInt(split_line[1]),
+                registry.bind("//145.94.230.51:1099"+"/" + split_line[0], new IProcessImplementation(Integer.parseInt(split_line[1]),
                         split_line[0], Integer.parseInt(split_line[2]), Boolean.parseBoolean(split_line[3])));
             }
             br.close();

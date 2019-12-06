@@ -70,7 +70,7 @@ public class IProcessImplementation extends UnicastRemoteObject implements IProc
                             }
                         }
                     },
-                    200
+                    (int) (Math.random() * 3000 + 1000)
             );
         }
     }
