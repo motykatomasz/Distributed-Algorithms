@@ -32,6 +32,8 @@ public interface IProcess extends Remote {
 
     void receiveReport(Message message, Edge edge) throws RemoteException;
 
+    void test() throws RemoteException;
+
     Integer getId() throws RemoteException;
 
     Integer getMachineId() throws RemoteException;

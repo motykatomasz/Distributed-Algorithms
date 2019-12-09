@@ -7,16 +7,6 @@ public class Message implements Serializable {
 
     private static final long serialVersionUID = 5787101278423113957L;
 
-    public enum MessageType {
-        INITIATE,
-        TEST,
-        ACCEPT,
-        CHANGE_ROOT,
-        CONNECT,
-        REPORT,
-        REJECT
-    }
-
     private MessageType type;
     private int senderId;
     private int receiverID;
@@ -26,8 +16,6 @@ public class Message implements Serializable {
     private double bestWeight;
     private ProcessState senderState;
 
-    public Message() {
-    }
 
     // constructor for ACCEPT, REJECT and CHANGE_ROOT messages
     public Message(MessageType type) {

@@ -7,12 +7,6 @@ public class Edge implements Serializable, Comparable{
 
     private static final long serialVersionUID = 4608245581791590791L;
 
-    public enum EdgeState {
-        IN_MST,
-        CANDIDATE,
-        NOT_IN_MST
-    }
-
     public static class EdgeComparator implements Comparator<Edge> {
         @Override
         public int compare(Edge o1, Edge o2) {
@@ -89,6 +83,7 @@ public class Edge implements Serializable, Comparable{
         if(arg0 == null){
             return -1;
         }
+        // We can compare like this because we assume unique weights
         double otherWeight = ((Edge) arg0).getWeight();
         if (this.weight < otherWeight)
             return -1;

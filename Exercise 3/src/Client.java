@@ -97,18 +97,18 @@ public class Client {
 
                 if (!edges.containsKey(from)) {
                     List<Edge> t = new ArrayList<>();
-                    t.add(new Edge(Edge.EdgeState.CANDIDATE, from, to, weight, deliveryTime));
+                    t.add(new Edge(EdgeState.CANDIDATE, from, to, weight, deliveryTime));
                     edges.put(from, t);
                 } else {
-                    edges.get(from).add(new Edge(Edge.EdgeState.CANDIDATE, from, to, weight, deliveryTime));
+                    edges.get(from).add(new Edge(EdgeState.CANDIDATE, from, to, weight, deliveryTime));
                 }
 
                 if (!edges.containsKey(to)) {
                     List<Edge> t = new ArrayList<>();
-                    t.add(new Edge(Edge.EdgeState.CANDIDATE, from, to, weight, deliveryTime));
+                    t.add(new Edge(EdgeState.CANDIDATE, to, from, weight, deliveryTime));
                     edges.put(to, t);
                 } else {
-                    edges.get(to).add(new Edge(Edge.EdgeState.CANDIDATE, from, to, weight, deliveryTime));
+                    edges.get(to).add(new Edge(EdgeState.CANDIDATE, to, from, weight, deliveryTime));
                 }
 
             }
