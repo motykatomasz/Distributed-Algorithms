@@ -34,6 +34,8 @@ public interface IProcess extends Remote {
 
     void test() throws RemoteException;
 
+    void report() throws RemoteException;
+
     Integer getId() throws RemoteException;
 
     Integer getMachineId() throws RemoteException;

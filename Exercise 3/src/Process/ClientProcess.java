@@ -14,8 +14,10 @@ public class ClientProcess implements Runnable {
     @Override
     public void run() {
         try {
-            Thread.sleep((int) (Math.random() * 9000 + 1000));
-            process.wakeUp();
+            if(process.getId() == 2) {
+                Thread.sleep((int) (Math.random() * 1000 + 1000));
+                process.wakeUp();
+            }
         } catch (
                 Exception e) {
             System.err.println("Client exception: " + e.toString());

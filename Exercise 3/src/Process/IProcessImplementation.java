@@ -168,7 +168,7 @@ public class IProcessImplementation extends UnicastRemoteObject implements IProc
                             @Override
                             public void run() {
                                 try {
-                                    System.out.println(id );
+                                    System.out.println(id + " retrieves connect message of process " + edge.getTo() + " from the queue");
                                     otherProcesses[edge.getFrom()].receive(message, edge);
                                 } catch (Exception e) {
                                     e.printStackTrace();
@@ -185,7 +185,6 @@ public class IProcessImplementation extends UnicastRemoteObject implements IProc
                             @Override
                             public void run() {
                                 try {
-                                    System.out.println(id + "retrieves connect message of process " + edge.getTo() + " from the queue");
                                     otherProcesses[edge.getFrom()].receive(msg, edge);
                                 } catch (Exception e) {
                                     e.printStackTrace();
@@ -239,6 +238,34 @@ public class IProcessImplementation extends UnicastRemoteObject implements IProc
     @Override
     public synchronized void test() throws RemoteException {
         System.out.println(id + " executes test procedure");
+        double minWeight = Double.POSITIVE_INFINITY;
+        testEdge = null;
+        for (Edge e : edges) {
+            if (EdgeState.CANDIDATE == e.getState() && e.getWeight() <= minWeight) {
+                testEdge = e;
+                minWeight = e.getWeight();
+            }
+        }
+
+        if (testEdge != null) {
+            new java.util.Timer().schedule(
+                    new java.util.TimerTask() {
+                        @Override
+                        public void run() {
+                            try {
+                                System.out.println(id + " sends Test message to process " + testEdge.getTo());
+                                Message msg = new Message(MessageType.TEST, fragmentLevel, fragmentName);
+                                otherProcesses[testEdge.getTo()].receive(msg, testEdge);
+                            } catch (Exception e) {
+                                e.printStackTrace();
+                            }
+                        }
+                    },
+                    500);
+        } else {
+            System.out.println(id + " has no adjacent candidates");
+            report();
+        }
     }
 
     @Override
@@ -249,6 +276,11 @@ public class IProcessImplementation extends UnicastRemoteObject implements IProc
     @Override
     public synchronized void receiveReject(Message message, Edge edge) throws RemoteException {
 
+    }
+
+    @Override
+    public synchronized void report() throws RemoteException {
+        System.out.println(id + " executes report procedure.");
     }
 
     @Override
