@@ -63,7 +63,7 @@ public class IProcessImplementation extends UnicastRemoteObject implements IProc
     }
 
     @Override
-    public synchronized void wakeUp() throws RemoteException {
+    public void wakeUp() throws RemoteException {
         if (ProcessState.SLEEPING != state) {
             System.out.println(id + " already woke up");
             return;
@@ -91,9 +91,8 @@ public class IProcessImplementation extends UnicastRemoteObject implements IProc
                         }
                     }
                 },
-                200
+                500
         );
-
     }
 
     @Override
@@ -155,7 +154,7 @@ public class IProcessImplementation extends UnicastRemoteObject implements IProc
                             }
                         }
                     },
-                    200
+                    500
             );
             if (state == ProcessState.FIND) {
                 System.out.println(id + " increments its findCount");
@@ -164,6 +163,19 @@ public class IProcessImplementation extends UnicastRemoteObject implements IProc
         } else {
             if (edge.getState() == EdgeState.CANDIDATE) {
                 // TODO: append message to the queue(???)
+                new java.util.Timer().schedule(
+                        new java.util.TimerTask() {
+                            @Override
+                            public void run() {
+                                try {
+                                    System.out.println(id );
+                                    otherProcesses[edge.getFrom()].receive(message, edge);
+                                } catch (Exception e) {
+                                    e.printStackTrace();
+                                }
+                            }
+                        },
+                        5000);
                 System.out.println(id + " appends Connect message to queue");
             } else {
                 Message msg = new Message(MessageType.INITIATE, fragmentLevel + 1, edge.getWeight(), ProcessState.FIND);
@@ -173,13 +185,14 @@ public class IProcessImplementation extends UnicastRemoteObject implements IProc
                             @Override
                             public void run() {
                                 try {
-                                    otherProcesses[edge.getTo()].receive(msg, edge);
+                                    System.out.println(id + "retrieves connect message of process " + edge.getTo() + " from the queue");
+                                    otherProcesses[edge.getFrom()].receive(msg, edge);
                                 } catch (Exception e) {
                                     e.printStackTrace();
                                 }
                             }
                         },
-                        200);
+                        500);
             }
         }
     }
@@ -209,7 +222,7 @@ public class IProcessImplementation extends UnicastRemoteObject implements IProc
                                 }
                             }
                         },
-                        200);
+                        500);
                 if (ProcessState.FIND == state) {
                     System.out.println(id + " increases findCount");
                     findCount++;
