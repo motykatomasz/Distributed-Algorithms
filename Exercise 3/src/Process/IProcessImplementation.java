@@ -51,6 +51,7 @@ public class IProcessImplementation extends UnicastRemoteObject implements IProc
     private Edge inBranch; //the adjacent edge leading to the core of the fragment
     private double bestWeight; //weight of the current candidate MOE
     private int findCount;
+    private int delay = 500;
 
     public IProcessImplementation(int id, String name, int machineId) throws RemoteException {
         super();
@@ -63,7 +64,7 @@ public class IProcessImplementation extends UnicastRemoteObject implements IProc
     }
 
     @Override
-    public void wakeUp() throws RemoteException {
+    public synchronized void wakeUp() throws RemoteException {
         if (ProcessState.SLEEPING != state) {
             System.out.println(id + " already woke up");
             return;
@@ -91,8 +92,7 @@ public class IProcessImplementation extends UnicastRemoteObject implements IProc
                         }
                     }
                 },
-                (int) (Math.random() * 2500 + 500)
-        );
+                delay);
     }
 
     @Override
@@ -130,30 +130,28 @@ public class IProcessImplementation extends UnicastRemoteObject implements IProc
             wakeUp();
 
         if (message.getLevel() < fragmentLevel) {
-            System.out.println("Fragment " + fragmentName + " absorbs.");
             edge.setState(EdgeState.IN_MST);
             Message msg = new Message(MessageType.INITIATE, fragmentLevel, fragmentName, state);
+            msg.setIsAbsorbMessage(true);
+            System.out.println(id + " sends Initiate to " + edge.getTo());
             new java.util.Timer().schedule(
                     new java.util.TimerTask() {
                         @Override
                         public void run() {
                             try {
-                                System.out.println(id + " sends Initiate to " + edge.getTo());
                                 otherProcesses[edge.getTo()].receive(msg, edge);
                             } catch (Exception e) {
                                 e.printStackTrace();
                             }
                         }
                     },
-                    (int) (Math.random() * 2500 + 500)
-            );
+                    delay);
             if (state == ProcessState.FIND) {
                 System.out.println(id + " increments its findCount");
                 findCount++;
             }
         } else {
             if (edge.getState() == EdgeState.CANDIDATE) {
-                // TODO: append message to the queue
                 new java.util.Timer().schedule(
                         new java.util.TimerTask() {
                             @Override
@@ -169,7 +167,7 @@ public class IProcessImplementation extends UnicastRemoteObject implements IProc
                         5000);
                 System.out.println(id + " appends Connect message to queue");
             } else {
-                System.out.println("Fragment " + fragmentName + " merges.");
+
                 Message msg = new Message(MessageType.INITIATE, fragmentLevel + 1, edge.getWeight(), ProcessState.FIND);
                 System.out.println(id + " sends Initiate to " + edge.getTo() + " with increased fragmentLevel");
                 new java.util.Timer().schedule(
@@ -177,13 +175,13 @@ public class IProcessImplementation extends UnicastRemoteObject implements IProc
                             @Override
                             public void run() {
                                 try {
-                                    otherProcesses[edge.getFrom()].receive(msg, edge);
+                                    otherProcesses[edge.getTo()].receive(msg, edge);
                                 } catch (Exception e) {
                                     e.printStackTrace();
                                 }
                             }
                         },
-                        (int) (Math.random() * 2500 + 500));
+                        delay);
             }
         }
     }
@@ -191,6 +189,10 @@ public class IProcessImplementation extends UnicastRemoteObject implements IProc
     @Override
     public synchronized void receiveInitiate(Message message, Edge edge) throws RemoteException {
         System.out.println(id + " received Initiate from " + edge.getTo());
+        if (fragmentLevel < message.getLevel() && message.getIsAbsorbMessage())
+            System.out.println("Fragment " + fragmentName + " is absorbed.");
+        else if (fragmentLevel < message.getLevel())
+            System.out.println("Fragment " + fragmentName + " merges.");
         fragmentLevel = message.getLevel();
         fragmentName = message.getFragmentName();
         state = message.getSenderState();
@@ -213,7 +215,7 @@ public class IProcessImplementation extends UnicastRemoteObject implements IProc
                                 }
                             }
                         },
-                        (int) (Math.random() * 2500 + 500));
+                        delay);
                 if (ProcessState.FIND == state) {
                     System.out.println(id + " increases findCount");
                     findCount++;
@@ -240,12 +242,12 @@ public class IProcessImplementation extends UnicastRemoteObject implements IProc
         }
 
         if (testEdge != null) {
+            System.out.println(id + " sends Test to process " + testEdge.getTo());
             new java.util.Timer().schedule(
                     new java.util.TimerTask() {
                         @Override
                         public void run() {
                             try {
-                                System.out.println(id + " sends Test to process " + testEdge.getTo());
                                 Message msg = new Message(MessageType.TEST, fragmentLevel, fragmentName);
                                 otherProcesses[testEdge.getTo()].receive(msg, testEdge);
                             } catch (Exception e) {
@@ -253,7 +255,7 @@ public class IProcessImplementation extends UnicastRemoteObject implements IProc
                             }
                         }
                     },
-                    (int) (Math.random() * 2500 + 500));
+                    delay);
         } else {
             System.out.println(id + " has no adjacent candidates");
             report();
@@ -267,7 +269,6 @@ public class IProcessImplementation extends UnicastRemoteObject implements IProc
             wakeUp();
 
         if (message.getLevel() > fragmentLevel) {
-            //TODO Append to a queue
             new java.util.Timer().schedule(
                     new java.util.TimerTask() {
                         @Override
@@ -298,7 +299,7 @@ public class IProcessImplementation extends UnicastRemoteObject implements IProc
                                 }
                             }
                         },
-                        (int) (Math.random() * 2500 + 500));
+                        delay);
 
             }
             else {
@@ -319,7 +320,7 @@ public class IProcessImplementation extends UnicastRemoteObject implements IProc
                                     }
                                 }
                             },
-                            (int) (Math.random() * 2500 + 500));
+                            delay);
                 }
                 else {
                     test();

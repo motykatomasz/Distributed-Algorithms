@@ -16,6 +16,8 @@ public class Message implements Serializable {
     private double bestWeight;
     private ProcessState senderState;
 
+    private boolean IsAbsorbMessage;
+
 
     // constructor for ACCEPT, REJECT and CHANGE_ROOT messages
     public Message(MessageType type) {
@@ -104,4 +106,13 @@ public class Message implements Serializable {
     public void setSenderState(ProcessState senderState) {
         this.senderState = senderState;
     }
+
+    public boolean getIsAbsorbMessage() {
+        return IsAbsorbMessage;
+    }
+
+    public void setIsAbsorbMessage(boolean value) {
+        this.IsAbsorbMessage = value;
+    }
+
 }
