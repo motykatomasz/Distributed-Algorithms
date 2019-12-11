@@ -185,7 +185,7 @@ public class IProcessImplementation extends UnicastRemoteObject implements IProc
                             @Override
                             public void run() {
                                 try {
-                                    otherProcesses[edge.getFrom()].receive(msg, edge);
+                                    otherProcesses[edge.getTo()].receive(msg, edge);
                                 } catch (Exception e) {
                                     e.printStackTrace();
                                 }
