@@ -14,7 +14,7 @@ public class ClientProcess implements Runnable {
     @Override
     public void run() {
         try {
-            if(process.getId() == 2) {
+            if(process.getId() == 1 || process.getId() == 6) {
                 Thread.sleep((int) (Math.random() * 1000 + 1000));
                 process.wakeUp();
             }
