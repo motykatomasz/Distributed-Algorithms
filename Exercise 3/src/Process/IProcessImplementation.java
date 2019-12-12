@@ -1,15 +1,10 @@
 package Process;
 
-import Utils.Edge;
-import Utils.EdgeState;
-import Utils.Message;
-import Utils.MessageType;
+import Utils.*;
 
 import java.rmi.RemoteException;
 import java.rmi.server.UnicastRemoteObject;
-import java.util.List;
-import java.util.PriorityQueue;
-import java.util.Queue;
+import java.util.*;
 
 /**
  * Remote Object Implementation
