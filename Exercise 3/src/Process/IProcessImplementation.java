@@ -7,9 +7,7 @@ import Utils.MessageType;
 
 import java.rmi.RemoteException;
 import java.rmi.server.UnicastRemoteObject;
-import java.util.List;
-import java.util.PriorityQueue;
-import java.util.Queue;
+import java.util.*;
 
 /**
  * Remote Object Implementation
@@ -51,7 +49,7 @@ public class IProcessImplementation extends UnicastRemoteObject implements IProc
     private Edge inBranch; //the adjacent edge leading to the core of the fragment
     private double bestWeight; //weight of the current candidate MOE
     private int findCount;
-    private int delay = 500;
+    private Map<Double, Long> lastDelayByEdge;
 
     public IProcessImplementation(int id, String name, int machineId) throws RemoteException {
         super();
@@ -93,7 +91,7 @@ public class IProcessImplementation extends UnicastRemoteObject implements IProc
                         }
                     }
                 },
-                delay);
+                getDelay(edge));
     }
 
     @Override
@@ -147,7 +145,7 @@ public class IProcessImplementation extends UnicastRemoteObject implements IProc
                             }
                         }
                     },
-                    delay);
+                    getDelay(edge));
             if (state == ProcessState.FIND) {
                 System.out.println(id + " increments its findCount");
                 findCount++;
@@ -166,7 +164,7 @@ public class IProcessImplementation extends UnicastRemoteObject implements IProc
                                 }
                             }
                         },
-                        (int) (Math.random() * 500 + 500));
+                        (int) (Math.random() * 1000 + 1000));
                 System.out.println(id + " appends Connect message from process " + edge.getTo() + " to queue");
             } else {
 
@@ -183,7 +181,7 @@ public class IProcessImplementation extends UnicastRemoteObject implements IProc
                                 }
                             }
                         },
-                        delay);
+                        getDelay(edge));
             }
         }
     }
@@ -219,7 +217,7 @@ public class IProcessImplementation extends UnicastRemoteObject implements IProc
                                 }
                             }
                         },
-                        delay);
+                        getDelay(e));
                 if (ProcessState.FIND == state) {
                     System.out.println(id + " increases findCount");
                     findCount++;
@@ -262,7 +260,7 @@ public class IProcessImplementation extends UnicastRemoteObject implements IProc
                             }
                         }
                     },
-                    delay);
+                    getDelay(tmpTestEdge));
         } else {
             System.out.println(id + " has no adjacent candidates");
             report();
@@ -288,7 +286,7 @@ public class IProcessImplementation extends UnicastRemoteObject implements IProc
                             }
                         }
                     },
-                    (int) (Math.random() * 500 + 500));
+                    (int) (Math.random() * 1000 + 1000));
             System.out.println(id + " appends Test message from process " + edge.getTo() + " to queue");
         }
         else {
@@ -306,7 +304,7 @@ public class IProcessImplementation extends UnicastRemoteObject implements IProc
                                 }
                             }
                         },
-                        delay);
+                        getDelay(edge));
 
             }
             else {
@@ -327,7 +325,7 @@ public class IProcessImplementation extends UnicastRemoteObject implements IProc
                                     }
                                 }
                             },
-                            delay);
+                            getDelay(edge));
                 }
                 else {
                     test();
@@ -370,7 +368,7 @@ public class IProcessImplementation extends UnicastRemoteObject implements IProc
             Message msg = new Message(MessageType.REPORT, bestWeight);
             System.out.println(id + " sends Report to process " + inBranch.getTo());
 
-            Edge tmpInBranch = inBranch;
+            Edge tmpInBranch = new Edge(inBranch);
 
             new java.util.Timer().schedule(
                     new java.util.TimerTask() {
@@ -383,7 +381,7 @@ public class IProcessImplementation extends UnicastRemoteObject implements IProc
                             }
                         }
                     },
-                    delay
+                    getDelay(tmpInBranch)
             );
         }
     }
@@ -417,7 +415,7 @@ public class IProcessImplementation extends UnicastRemoteObject implements IProc
                                 }
                             }
                         },
-                        (int) (Math.random() * 500 + 500));
+                        (int) (Math.random() * 1000 + 1000));
             } else {
                 if (message.getWeight() > bestWeight)
                     changeRoot();
@@ -439,7 +437,7 @@ public class IProcessImplementation extends UnicastRemoteObject implements IProc
             Message msg = new Message(MessageType.CHANGE_ROOT);
             System.out.println(id + " sends ChangeRoot message to process " + bestEdge.getTo());
 
-            Edge tmpBestEdge = bestEdge;
+            Edge tmpBestEdge = new Edge(bestEdge);
 
             new java.util.Timer().schedule(
                     new java.util.TimerTask() {
@@ -452,13 +450,13 @@ public class IProcessImplementation extends UnicastRemoteObject implements IProc
                             }
                         }
                     },
-                    delay
+                    getDelay(tmpBestEdge)
             );
         } else {
             Message msg = new Message(MessageType.CONNECT, fragmentLevel);
             System.out.println(id + " sends Connect message to process " + bestEdge.getTo() + " - ChangeRoot");
 
-            Edge tmpBestEdge = bestEdge;
+            Edge tmpBestEdge = new Edge(bestEdge);
 
             new java.util.Timer().schedule(
                     new java.util.TimerTask() {
@@ -471,7 +469,7 @@ public class IProcessImplementation extends UnicastRemoteObject implements IProc
                             }
                         }
                     },
-                    delay
+                    getDelay(tmpBestEdge)
             );
             bestEdge.setState(EdgeState.IN_MST);
             System.out.println("(" + bestEdge.getFrom() + "," + bestEdge.getTo() + ") in MST.");
@@ -491,6 +489,19 @@ public class IProcessImplementation extends UnicastRemoteObject implements IProc
             }
         }
         return null;
+    }
+
+    private synchronized int getDelay(Edge edge) {
+        long lastDelay = this.lastDelayByEdge.get(edge.getWeight());
+        long currentTime = System.currentTimeMillis();
+        int newDelay = (int) (Math.random() * 2000 + 1000);
+        long diff = (currentTime + newDelay) - lastDelay;
+
+        if (diff < 0)
+            newDelay = (int) (newDelay - diff);
+
+        this.lastDelayByEdge.put(edge.getWeight(), currentTime + newDelay);
+        return newDelay;
     }
 
     @Override
@@ -526,6 +537,10 @@ public class IProcessImplementation extends UnicastRemoteObject implements IProc
     @Override
     public void addAdjacentEdges(Queue<Edge> edges) {
         this.edges = new PriorityQueue<>(edges);
+        this.lastDelayByEdge = new HashMap<>();
+        for (Edge e : edges) {
+            lastDelayByEdge.put(e.getWeight(), System.currentTimeMillis());
+        }
     }
 
 }
