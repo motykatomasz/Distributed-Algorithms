@@ -11,7 +11,7 @@ public class Server {
         try{
             Registry registry = LocateRegistry.createRegistry(1099);
 
-            BufferedReader br = new BufferedReader(new FileReader("inputFiles/clients2"));
+            BufferedReader br = new BufferedReader(new FileReader("inputFiles/clients3"));
             String line;
             while ((line = br.readLine()) != null) {
                 String[] split_line = line.split(" ");

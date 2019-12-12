@@ -80,7 +80,7 @@ public class IProcessImplementation extends UnicastRemoteObject implements IProc
         state = ProcessState.FOUND;
         findCount = 0;
         Message msg = new Message(MessageType.CONNECT, 0);
-        System.out.println(id + " sends Connect to " + edge.getTo());
+        System.out.println(id + " sends Connect to " + edge.getTo() + " - WakeUp");
         new java.util.Timer().schedule(
                 new java.util.TimerTask() {
                     @Override
@@ -126,7 +126,7 @@ public class IProcessImplementation extends UnicastRemoteObject implements IProc
 
     @Override
     public synchronized void receiveConnect(Message message, Edge edge) throws RemoteException {
-        System.out.println("Process " + id + " received Connect from process " + edge.getTo());
+        System.out.println(id + " receives Connect from process " + edge.getTo());
         if (state == ProcessState.SLEEPING)
             wakeUp();
 
@@ -166,7 +166,7 @@ public class IProcessImplementation extends UnicastRemoteObject implements IProc
                                 }
                             }
                         },
-                        (int) (Math.random() * 2000 + 1000));
+                        (int) (Math.random() * 500 + 500));
                 System.out.println(id + " appends Connect message from process " + edge.getTo() + " to queue");
             } else {
 
@@ -205,12 +205,14 @@ public class IProcessImplementation extends UnicastRemoteObject implements IProc
         for (Edge e : edges) {
             if (edge.compareTo(e) != 0 && EdgeState.IN_MST == e.getState()) {
                 System.out.println(id + " sends Initiate to " + e.getTo());
+
+                Message msg = new Message(MessageType.INITIATE, fragmentLevel, fragmentName, state);
+
                 new java.util.Timer().schedule(
                         new java.util.TimerTask() {
                             @Override
                             public void run() {
                                 try {
-                                    Message msg = new Message(MessageType.INITIATE, fragmentLevel, fragmentName, state);
                                     otherProcesses[e.getTo()].receive(msg, e);
                                 } catch (Exception e) {
                                     e.printStackTrace();
@@ -245,14 +247,16 @@ public class IProcessImplementation extends UnicastRemoteObject implements IProc
 
         if (testEdge != null) {
             System.out.println(id + " sends Test to process " + testEdge.getTo());
-            Edge tmpEdge = new Edge(testEdge);
+
+            Message msg = new Message(MessageType.TEST, fragmentLevel, fragmentName);
+            Edge tmpTestEdge = new Edge(testEdge);
+
             new java.util.Timer().schedule(
                     new java.util.TimerTask() {
                         @Override
                         public void run() {
                             try {
-                                Message msg = new Message(MessageType.TEST, fragmentLevel, fragmentName);
-                                otherProcesses[tmpEdge.getTo()].receive(msg, tmpEdge);
+                                otherProcesses[tmpTestEdge.getTo()].receive(msg, tmpTestEdge);
                             } catch (Exception e) {
                                 e.printStackTrace();
                             }
@@ -267,7 +271,7 @@ public class IProcessImplementation extends UnicastRemoteObject implements IProc
 
     @Override
     public synchronized void receiveTest(Message message, Edge edge) throws RemoteException {
-        System.out.println("Process " + id + " received Test from process " + edge.getTo());
+        System.out.println(id + " received Test from process " + edge.getTo());
         if (state == ProcessState.SLEEPING)
             wakeUp();
 
@@ -284,7 +288,7 @@ public class IProcessImplementation extends UnicastRemoteObject implements IProc
                             }
                         }
                     },
-                    (int) (Math.random() * 2000 + 1000));
+                    (int) (Math.random() * 500 + 500));
             System.out.println(id + " appends Test message from process " + edge.getTo() + " to queue");
         }
         else {
@@ -365,12 +369,15 @@ public class IProcessImplementation extends UnicastRemoteObject implements IProc
             this.state = ProcessState.FOUND;
             Message msg = new Message(MessageType.REPORT, bestWeight);
             System.out.println(id + " sends Report to process " + inBranch.getTo());
+
+            Edge tmpInBranch = inBranch;
+
             new java.util.Timer().schedule(
                     new java.util.TimerTask() {
                         @Override
                         public void run() {
                             try {
-                                otherProcesses[inBranch.getTo()].receive(msg, inBranch);
+                                otherProcesses[tmpInBranch.getTo()].receive(msg, tmpInBranch);
                             } catch (Exception e) {
                                 e.printStackTrace();
                             }
@@ -410,7 +417,7 @@ public class IProcessImplementation extends UnicastRemoteObject implements IProc
                                 }
                             }
                         },
-                        (int) (Math.random() * 2000 + 1000));
+                        (int) (Math.random() * 500 + 500));
             } else {
                 if (message.getWeight() > bestWeight)
                     changeRoot();
@@ -431,12 +438,15 @@ public class IProcessImplementation extends UnicastRemoteObject implements IProc
         if (bestEdge.getState() == EdgeState.IN_MST){
             Message msg = new Message(MessageType.CHANGE_ROOT);
             System.out.println(id + " sends ChangeRoot message to process " + bestEdge.getTo());
+
+            Edge tmpBestEdge = bestEdge;
+
             new java.util.Timer().schedule(
                     new java.util.TimerTask() {
                         @Override
                         public void run() {
                             try {
-                                otherProcesses[bestEdge.getTo()].receive(msg, bestEdge);
+                                otherProcesses[tmpBestEdge.getTo()].receive(msg, tmpBestEdge);
                             } catch (Exception e) {
                                 e.printStackTrace();
                             }
@@ -446,13 +456,16 @@ public class IProcessImplementation extends UnicastRemoteObject implements IProc
             );
         } else {
             Message msg = new Message(MessageType.CONNECT, fragmentLevel);
-            System.out.println(id + " sends Connect message to process " + bestEdge.getTo());
+            System.out.println(id + " sends Connect message to process " + bestEdge.getTo() + " - ChangeRoot");
+
+            Edge tmpBestEdge = bestEdge;
+
             new java.util.Timer().schedule(
                     new java.util.TimerTask() {
                         @Override
                         public void run() {
                             try {
-                                otherProcesses[bestEdge.getTo()].receive(msg, bestEdge);
+                                otherProcesses[tmpBestEdge.getTo()].receive(msg, tmpBestEdge);
                             } catch (Exception e) {
                                 e.printStackTrace();
                             }
