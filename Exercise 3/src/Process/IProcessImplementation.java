@@ -1,15 +1,10 @@
 package Process;
 
-import Utils.Edge;
-import Utils.EdgeState;
-import Utils.Message;
-import Utils.MessageType;
+import Utils.*;
 
 import java.rmi.RemoteException;
 import java.rmi.server.UnicastRemoteObject;
-import java.util.List;
-import java.util.PriorityQueue;
-import java.util.Queue;
+import java.util.*;
 
 /**
  * Remote Object Implementation
@@ -53,6 +48,8 @@ public class IProcessImplementation extends UnicastRemoteObject implements IProc
     private int findCount;
     private int delay = 500;
 
+    private List<QueuedMessage> messageQueue = new LinkedList<>();
+
     public IProcessImplementation(int id, String name, int machineId) throws RemoteException {
         super();
         this.id = id;
@@ -74,6 +71,7 @@ public class IProcessImplementation extends UnicastRemoteObject implements IProc
 
         Edge edge = edges.peek();
         edge.setState(EdgeState.IN_MST);
+
         System.out.println(id + " changes state of edge to " + edge.getTo() + " to IN_MST");
         System.out.println("(" + edge.getFrom() + "," + edge.getTo() + ") in MST.");
 
@@ -132,6 +130,7 @@ public class IProcessImplementation extends UnicastRemoteObject implements IProc
 
         if (message.getLevel() < fragmentLevel) {
             edge.setState(EdgeState.IN_MST);
+
             System.out.println("(" + edge.getFrom() + "," + edge.getTo() + ") in MST.");
             Message msg = new Message(MessageType.INITIATE, fragmentLevel, fragmentName, state);
             msg.setIsAbsorbMessage(true);
@@ -154,19 +153,36 @@ public class IProcessImplementation extends UnicastRemoteObject implements IProc
             }
         } else {
             if (edge.getState() == EdgeState.CANDIDATE) {
+
+                System.out.println("ADD EDGE (" + edge.getFrom() + "," + edge.getTo() + ") TO QUEUE!!") ;
+
                 new java.util.Timer().schedule(
                         new java.util.TimerTask() {
                             @Override
                             public void run() {
-                                try {
-                                    System.out.println(id + " retrieves Connect message of process " + edge.getTo() + " from the queue");
-                                    otherProcesses[edge.getFrom()].receive(message, edge);
-                                } catch (Exception e) {
-                                    e.printStackTrace();
+
+                                QueuedMessage msg = new QueuedMessage(QueuedMessageType.CONNECT);
+                                messageQueue.add(msg);
+
+                                synchronized (msg)
+                                {
+                                    try {
+                                        msg.wait();
+                                        System.out.println(id + " retrieves Connect message of process " + edge.getTo() + " from the queue");
+                                        otherProcesses[edge.getFrom()].receive(message, edge);
+                                    } catch (Exception e) {
+                                        e.printStackTrace();
+                                    }
                                 }
+
+
+
+
+
+
                             }
                         },
-                        (int) (Math.random() * 500 + 500));
+                        10);
                 System.out.println(id + " appends Connect message from process " + edge.getTo() + " to queue");
             } else {
 
@@ -195,6 +211,23 @@ public class IProcessImplementation extends UnicastRemoteObject implements IProc
             System.out.println("Fragment " + fragmentName + " is absorbed.");
         else if (fragmentLevel < message.getLevel())
             System.out.println("Fragment " + fragmentName + " merges.");
+        if (fragmentLevel < message.getLevel()){
+            System.out.println("LEVEL INCREASED FOR " + id);
+
+            for (int i=0; i<messageQueue.size(); i++) {
+                QueuedMessage msg = messageQueue.get(i);
+                if (msg.getType() == QueuedMessageType.CONNECT) {
+
+                    synchronized (msg) {
+                        msg.notify();
+                    }
+
+                    messageQueue.remove(msg);
+                    i--;
+                }
+            }
+
+        }
         fragmentLevel = message.getLevel();
         fragmentName = message.getFragmentName();
         state = message.getSenderState();
@@ -288,7 +321,7 @@ public class IProcessImplementation extends UnicastRemoteObject implements IProc
                             }
                         }
                     },
-                    (int) (Math.random() * 500 + 500));
+                    (int) (Math.random() * 1000 + 1000));
             System.out.println(id + " appends Test message from process " + edge.getTo() + " to queue");
         }
         else {
@@ -417,7 +450,7 @@ public class IProcessImplementation extends UnicastRemoteObject implements IProc
                                 }
                             }
                         },
-                        (int) (Math.random() * 500 + 500));
+                        (int) (Math.random() * 1000 + 1000));
             } else {
                 if (message.getWeight() > bestWeight)
                     changeRoot();
