@@ -175,14 +175,9 @@ public class IProcessImplementation extends UnicastRemoteObject implements IProc
                                     }
                                 }
 
-
-
-
-
-
                             }
                         },
-                        10);
+                        0);
                 System.out.println(id + " appends Connect message from process " + edge.getTo() + " to queue");
             } else {
 
