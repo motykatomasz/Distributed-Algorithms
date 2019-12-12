@@ -164,8 +164,8 @@ public class IProcessImplementation extends UnicastRemoteObject implements IProc
                                 }
                             }
                         },
-                        5000);
-                System.out.println(id + " appends Connect message to queue");
+                        (int) (Math.random() * 2000 + 1000));
+                System.out.println(id + " appends Connect message from process " + edge.getTo() + " to queue");
             } else {
 
                 Message msg = new Message(MessageType.INITIATE, fragmentLevel + 1, edge.getWeight(), ProcessState.FIND);
@@ -281,8 +281,8 @@ public class IProcessImplementation extends UnicastRemoteObject implements IProc
                             }
                         }
                     },
-                    5000);
-            System.out.println(id + " appends Test message to queue");
+                    (int) (Math.random() * 2000 + 1000));
+            System.out.println(id + " appends Test message from process " + edge.getTo() + " to queue");
         }
         else {
             if (message.getFragmentName() != fragmentName) {
@@ -350,6 +350,16 @@ public class IProcessImplementation extends UnicastRemoteObject implements IProc
         }
         report();
 
+    }
+
+    @Override
+    public synchronized void changeRoot() throws RemoteException {
+
+    }
+
+    @Override
+    public synchronized void receiveChangeRoot(Message message, Edge edge) throws RemoteException {
+        System.out.println("Process " + id + " received ChangeRoot from process " + edge.getTo() + " and does nothing.");
     }
 
     @Override
