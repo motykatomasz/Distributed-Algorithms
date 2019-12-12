@@ -353,16 +353,6 @@ public class IProcessImplementation extends UnicastRemoteObject implements IProc
     }
 
     @Override
-    public synchronized void changeRoot() throws RemoteException {
-
-    }
-
-    @Override
-    public synchronized void receiveChangeRoot(Message message, Edge edge) throws RemoteException {
-        System.out.println("Process " + id + " received ChangeRoot from process " + edge.getTo() + " and does nothing.");
-    }
-
-    @Override
     public synchronized void report() throws RemoteException {
         System.out.println(id + " executes report procedure.");
         if (testEdge != null) {
@@ -391,7 +381,83 @@ public class IProcessImplementation extends UnicastRemoteObject implements IProc
 
     @Override
     public synchronized void receiveReport(Message message, Edge edge) throws RemoteException {
-        System.out.println("Process " + id + " received Report from process " + edge.getTo() + " and does nothing.");
+        if (edge.compareTo(inBranch) != 0){
+            findCount--;
+            if (message.getWeight() < bestWeight){
+                bestWeight = message.getWeight();
+                bestEdge = edge;
+            }
+            report();
+        }
+        else {
+            if (state == ProcessState.FIND){
+                new java.util.Timer().schedule(
+                        new java.util.TimerTask() {
+                            @Override
+                            public void run() {
+                                try {
+                                    System.out.println(id + " retrieves Report message of process " + edge.getTo() + " from the queue");
+                                    otherProcesses[edge.getFrom()].receive(message, edge);
+                                } catch (Exception e) {
+                                    e.printStackTrace();
+                                }
+                            }
+                        },
+                        5000);
+            } else {
+                if (message.getWeight() > bestWeight)
+                    changeRoot();
+                else {
+                    if (message.getWeight() == bestWeight && bestWeight == Double.POSITIVE_INFINITY) {
+                        System.out.println("Process " + id + " HALTS.");
+                        for (Edge e : edges)
+                            if (e.getState() == EdgeState.IN_MST)
+                                System.out.println("(" + e.getFrom() + "," + e.getTo() + ") in MST.");
+                    }
+                }
+            }
+        }
+    }
+
+    @Override
+    public synchronized void changeRoot() throws RemoteException {
+        if (bestEdge.getState() == EdgeState.IN_MST){
+            Message msg = new Message(MessageType.CHANGE_ROOT);
+            new java.util.Timer().schedule(
+                    new java.util.TimerTask() {
+                        @Override
+                        public void run() {
+                            try {
+                                otherProcesses[bestEdge.getTo()].receive(msg, bestEdge);
+                            } catch (Exception e) {
+                                e.printStackTrace();
+                            }
+                        }
+                    },
+                    delay
+            );
+        } else {
+            Message msg = new Message(MessageType.CONNECT, fragmentLevel);
+            new java.util.Timer().schedule(
+                    new java.util.TimerTask() {
+                        @Override
+                        public void run() {
+                            try {
+                                otherProcesses[bestEdge.getTo()].receive(msg, bestEdge);
+                            } catch (Exception e) {
+                                e.printStackTrace();
+                            }
+                        }
+                    },
+                    delay
+            );
+            bestEdge.setState(EdgeState.IN_MST);
+        }
+    }
+
+    @Override
+    public synchronized void receiveChangeRoot(Message message, Edge edge) throws RemoteException {
+        changeRoot();
     }
 
     private synchronized Edge getOppositeEdge(Edge edge) {
