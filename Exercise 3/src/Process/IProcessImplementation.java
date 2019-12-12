@@ -332,28 +332,66 @@ public class IProcessImplementation extends UnicastRemoteObject implements IProc
 
     @Override
     public synchronized void receiveReject(Message message, Edge edge) throws RemoteException {
-
+        System.out.println("Process " + id + " received Reject from process " + edge.getTo());
+        if (edge.getState() == EdgeState.CANDIDATE) {
+            System.out.println(id + " changes edge to " + edge.getTo() + " to NOT_IN_MST");
+            edge.setState(EdgeState.NOT_IN_MST);
+        }
+        test();
     }
 
     @Override
     public synchronized void receiveAccept(Message message, Edge edge) throws RemoteException {
+        System.out.println("Process " + id + " received Accept from process " + edge.getTo());
+        testEdge = null;
+        if (edge.getWeight() < bestWeight) {
+            bestEdge = edge;
+            bestWeight = edge.getWeight();
+        }
+        report();
+
+    }
+
+    @Override
+    public synchronized void changeRoot() throws RemoteException {
 
     }
 
     @Override
     public synchronized void receiveChangeRoot(Message message, Edge edge) throws RemoteException {
-
+        System.out.println("Process " + id + " received ChangeRoot from process " + edge.getTo() + " and does nothing.");
     }
 
     @Override
     public synchronized void report() throws RemoteException {
         System.out.println(id + " executes report procedure.");
+        if (testEdge != null) {
+            System.out.println(id + " testing edge from " + testEdge.getFrom() + " to " + testEdge.getTo());
+        }
+        if (findCount == 0 && testEdge == null) {
+            this.state = ProcessState.FOUND;
+            Message msg = new Message(MessageType.REPORT, bestWeight);
+            System.out.println(id + " sends Report to process " + inBranch.getTo());
+            new java.util.Timer().schedule(
+                    new java.util.TimerTask() {
+                        @Override
+                        public void run() {
+                            try {
+                                otherProcesses[inBranch.getTo()].receive(msg, inBranch);
+                            } catch (Exception e) {
+                                e.printStackTrace();
+                            }
+                        }
+                    },
+                    delay
+            );
+        }
     }
 
 
     @Override
     public synchronized void receiveReport(Message message, Edge edge) throws RemoteException {
-
+        System.out.println("Process " + id + " received Report from process " + edge.getTo() + " and does nothing.");
     }
 
     private synchronized Edge getOppositeEdge(Edge edge) {
