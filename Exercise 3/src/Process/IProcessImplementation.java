@@ -370,7 +370,7 @@ public class IProcessImplementation extends UnicastRemoteObject implements IProc
             Message msg = new Message(MessageType.REPORT, bestWeight);
             System.out.println(id + " sends Report to process " + inBranch.getTo());
 
-            Edge tmpInBranch = inBranch;
+            Edge tmpInBranch = new Edge(inBranch);;
 
             new java.util.Timer().schedule(
                     new java.util.TimerTask() {
@@ -439,7 +439,7 @@ public class IProcessImplementation extends UnicastRemoteObject implements IProc
             Message msg = new Message(MessageType.CHANGE_ROOT);
             System.out.println(id + " sends ChangeRoot message to process " + bestEdge.getTo());
 
-            Edge tmpBestEdge = bestEdge;
+            Edge tmpBestEdge = new Edge(bestEdge);
 
             new java.util.Timer().schedule(
                     new java.util.TimerTask() {
@@ -458,7 +458,7 @@ public class IProcessImplementation extends UnicastRemoteObject implements IProc
             Message msg = new Message(MessageType.CONNECT, fragmentLevel);
             System.out.println(id + " sends Connect message to process " + bestEdge.getTo() + " - ChangeRoot");
 
-            Edge tmpBestEdge = bestEdge;
+            Edge tmpBestEdge = new Edge(bestEdge);
 
             new java.util.Timer().schedule(
                     new java.util.TimerTask() {
