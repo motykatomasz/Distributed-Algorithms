@@ -75,11 +75,12 @@ public class IProcessImplementation extends UnicastRemoteObject implements IProc
         Edge edge = edges.peek();
         edge.setState(EdgeState.IN_MST);
         System.out.println(id + " changes state of edge to " + edge.getTo() + " to IN_MST");
+        System.out.println("(" + edge.getFrom() + "," + edge.getTo() + ") in MST.");
 
         state = ProcessState.FOUND;
         findCount = 0;
         Message msg = new Message(MessageType.CONNECT, 0);
-        System.out.println(id + " sends Connect to " + edge.getTo());
+        System.out.println(id + " sends Connect to " + edge.getTo() + " - WakeUp");
         new java.util.Timer().schedule(
                 new java.util.TimerTask() {
                     @Override
@@ -125,12 +126,13 @@ public class IProcessImplementation extends UnicastRemoteObject implements IProc
 
     @Override
     public synchronized void receiveConnect(Message message, Edge edge) throws RemoteException {
-        System.out.println("Process " + id + " received Connect from process " + edge.getTo());
+        System.out.println(id + " receives Connect from process " + edge.getTo());
         if (state == ProcessState.SLEEPING)
             wakeUp();
 
         if (message.getLevel() < fragmentLevel) {
             edge.setState(EdgeState.IN_MST);
+            System.out.println("(" + edge.getFrom() + "," + edge.getTo() + ") in MST.");
             Message msg = new Message(MessageType.INITIATE, fragmentLevel, fragmentName, state);
             msg.setIsAbsorbMessage(true);
             System.out.println(id + " sends Initiate to " + edge.getTo());
@@ -164,8 +166,8 @@ public class IProcessImplementation extends UnicastRemoteObject implements IProc
                                 }
                             }
                         },
-                        5000);
-                System.out.println(id + " appends Connect message to queue");
+                        (int) (Math.random() * 500 + 500));
+                System.out.println(id + " appends Connect message from process " + edge.getTo() + " to queue");
             } else {
 
                 Message msg = new Message(MessageType.INITIATE, fragmentLevel + 1, edge.getWeight(), ProcessState.FIND);
@@ -203,12 +205,14 @@ public class IProcessImplementation extends UnicastRemoteObject implements IProc
         for (Edge e : edges) {
             if (edge.compareTo(e) != 0 && EdgeState.IN_MST == e.getState()) {
                 System.out.println(id + " sends Initiate to " + e.getTo());
+
+                Message msg = new Message(MessageType.INITIATE, fragmentLevel, fragmentName, state);
+
                 new java.util.Timer().schedule(
                         new java.util.TimerTask() {
                             @Override
                             public void run() {
                                 try {
-                                    Message msg = new Message(MessageType.INITIATE, fragmentLevel, fragmentName, state);
                                     otherProcesses[e.getTo()].receive(msg, e);
                                 } catch (Exception e) {
                                     e.printStackTrace();
@@ -243,13 +247,16 @@ public class IProcessImplementation extends UnicastRemoteObject implements IProc
 
         if (testEdge != null) {
             System.out.println(id + " sends Test to process " + testEdge.getTo());
+
+            Message msg = new Message(MessageType.TEST, fragmentLevel, fragmentName);
+            Edge tmpTestEdge = new Edge(testEdge);
+
             new java.util.Timer().schedule(
                     new java.util.TimerTask() {
                         @Override
                         public void run() {
                             try {
-                                Message msg = new Message(MessageType.TEST, fragmentLevel, fragmentName);
-                                otherProcesses[testEdge.getTo()].receive(msg, testEdge);
+                                otherProcesses[tmpTestEdge.getTo()].receive(msg, tmpTestEdge);
                             } catch (Exception e) {
                                 e.printStackTrace();
                             }
@@ -264,7 +271,7 @@ public class IProcessImplementation extends UnicastRemoteObject implements IProc
 
     @Override
     public synchronized void receiveTest(Message message, Edge edge) throws RemoteException {
-        System.out.println("Process " + id + " received Test from process " + edge.getTo());
+        System.out.println(id + " received Test from process " + edge.getTo());
         if (state == ProcessState.SLEEPING)
             wakeUp();
 
@@ -281,8 +288,8 @@ public class IProcessImplementation extends UnicastRemoteObject implements IProc
                             }
                         }
                     },
-                    5000);
-            System.out.println(id + " appends Test message to queue");
+                    (int) (Math.random() * 500 + 500));
+            System.out.println(id + " appends Test message from process " + edge.getTo() + " to queue");
         }
         else {
             if (message.getFragmentName() != fragmentName) {
@@ -332,28 +339,149 @@ public class IProcessImplementation extends UnicastRemoteObject implements IProc
 
     @Override
     public synchronized void receiveReject(Message message, Edge edge) throws RemoteException {
-
+        System.out.println("Process " + id + " received Reject from process " + edge.getTo());
+        if (edge.getState() == EdgeState.CANDIDATE) {
+            System.out.println(id + " changes edge to " + edge.getTo() + " to NOT_IN_MST");
+            edge.setState(EdgeState.NOT_IN_MST);
+        }
+        test();
     }
 
     @Override
     public synchronized void receiveAccept(Message message, Edge edge) throws RemoteException {
-
-    }
-
-    @Override
-    public synchronized void receiveChangeRoot(Message message, Edge edge) throws RemoteException {
+        System.out.println("Process " + id + " received Accept from process " + edge.getTo());
+        testEdge = null;
+        if (edge.getWeight() < bestWeight) {
+            bestEdge = edge;
+            bestWeight = edge.getWeight();
+        }
+        report();
 
     }
 
     @Override
     public synchronized void report() throws RemoteException {
         System.out.println(id + " executes report procedure.");
+        if (testEdge != null) {
+            System.out.println(id + " testing edge from " + testEdge.getFrom() + " to " + testEdge.getTo());
+        }
+        if (findCount == 0 && testEdge == null) {
+            this.state = ProcessState.FOUND;
+            Message msg = new Message(MessageType.REPORT, bestWeight);
+            System.out.println(id + " sends Report to process " + inBranch.getTo());
+
+            Edge tmpInBranch = inBranch;
+
+            new java.util.Timer().schedule(
+                    new java.util.TimerTask() {
+                        @Override
+                        public void run() {
+                            try {
+                                otherProcesses[tmpInBranch.getTo()].receive(msg, tmpInBranch);
+                            } catch (Exception e) {
+                                e.printStackTrace();
+                            }
+                        }
+                    },
+                    delay
+            );
+        }
     }
 
 
     @Override
     public synchronized void receiveReport(Message message, Edge edge) throws RemoteException {
+        System.out.println(id + " receives Report message from process " + edge.getTo());
+        if (edge.compareTo(inBranch) != 0){
+            findCount--;
+            System.out.println(id + " decreases its FindCount");
+            if (message.getWeight() < bestWeight){
+                bestWeight = message.getWeight();
+                bestEdge = edge;
+                System.out.println(id + " found new best edge");
+            }
+            report();
+        }
+        else {
+            if (state == ProcessState.FIND){
+                System.out.println(id + " appends Report message of process " + edge.getTo() + " to queue");
+                new java.util.Timer().schedule(
+                        new java.util.TimerTask() {
+                            @Override
+                            public void run() {
+                                try {
+                                    System.out.println(id + " retrieves Report message of process " + edge.getTo() + " from the queue");
+                                    otherProcesses[edge.getFrom()].receive(message, edge);
+                                } catch (Exception e) {
+                                    e.printStackTrace();
+                                }
+                            }
+                        },
+                        (int) (Math.random() * 500 + 500));
+            } else {
+                if (message.getWeight() > bestWeight)
+                    changeRoot();
+                else {
+                    if (message.getWeight() == bestWeight && bestWeight == Double.POSITIVE_INFINITY) {
+                        System.out.println("Process " + id + " HALTS.");
+                        //for (Edge e : edges)
+                            //if (e.getState() == EdgeState.IN_MST)
+                                //System.out.println("(" + e.getFrom() + "," + e.getTo() + ") in MST.");
+                    }
+                }
+            }
+        }
+    }
 
+    @Override
+    public synchronized void changeRoot() throws RemoteException {
+        if (bestEdge.getState() == EdgeState.IN_MST){
+            Message msg = new Message(MessageType.CHANGE_ROOT);
+            System.out.println(id + " sends ChangeRoot message to process " + bestEdge.getTo());
+
+            Edge tmpBestEdge = bestEdge;
+
+            new java.util.Timer().schedule(
+                    new java.util.TimerTask() {
+                        @Override
+                        public void run() {
+                            try {
+                                otherProcesses[tmpBestEdge.getTo()].receive(msg, tmpBestEdge);
+                            } catch (Exception e) {
+                                e.printStackTrace();
+                            }
+                        }
+                    },
+                    delay
+            );
+        } else {
+            Message msg = new Message(MessageType.CONNECT, fragmentLevel);
+            System.out.println(id + " sends Connect message to process " + bestEdge.getTo() + " - ChangeRoot");
+
+            Edge tmpBestEdge = bestEdge;
+
+            new java.util.Timer().schedule(
+                    new java.util.TimerTask() {
+                        @Override
+                        public void run() {
+                            try {
+                                otherProcesses[tmpBestEdge.getTo()].receive(msg, tmpBestEdge);
+                            } catch (Exception e) {
+                                e.printStackTrace();
+                            }
+                        }
+                    },
+                    delay
+            );
+            bestEdge.setState(EdgeState.IN_MST);
+            System.out.println("(" + bestEdge.getFrom() + "," + bestEdge.getTo() + ") in MST.");
+        }
+    }
+
+    @Override
+    public synchronized void receiveChangeRoot(Message message, Edge edge) throws RemoteException {
+        System.out.println(id + " receives ChangeRoot message from process " + edge.getTo());
+        changeRoot();
     }
 
     private synchronized Edge getOppositeEdge(Edge edge) {
