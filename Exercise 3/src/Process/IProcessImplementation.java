@@ -206,12 +206,13 @@ public class IProcessImplementation extends UnicastRemoteObject implements IProc
             System.out.println("Fragment " + fragmentName + " is absorbed.");
         else if (fragmentLevel < message.getLevel())
             System.out.println("Fragment " + fragmentName + " merges.");
+
         if (fragmentLevel < message.getLevel()){
             System.out.println("LEVEL INCREASED FOR " + id);
 
             for (int i=0; i<messageQueue.size(); i++) {
                 QueuedMessage msg = messageQueue.get(i);
-                if (msg.getType() == QueuedMessageType.CONNECT) {
+                if (msg.getType() == QueuedMessageType.CONNECT || msg.getType() == QueuedMessageType.TEST) {
 
                     synchronized (msg) {
                         msg.notify();
@@ -223,6 +224,25 @@ public class IProcessImplementation extends UnicastRemoteObject implements IProc
             }
 
         }
+
+        if (message.getSenderState() == ProcessState.FIND) {
+            System.out.println("STATE CHANGED TO FIND FOR " + id);
+
+            for (int i=0; i<messageQueue.size(); i++) {
+                QueuedMessage msg = messageQueue.get(i);
+                if (msg.getType() == QueuedMessageType.REPORT) {
+
+                    synchronized (msg) {
+                        msg.notify();
+                    }
+
+                    messageQueue.remove(msg);
+                    i--;
+                }
+            }
+        }
+
+
         fragmentLevel = message.getLevel();
         fragmentName = message.getFragmentName();
         state = message.getSenderState();
@@ -308,15 +328,23 @@ public class IProcessImplementation extends UnicastRemoteObject implements IProc
                     new java.util.TimerTask() {
                         @Override
                         public void run() {
-                            try {
-                                System.out.println(id + " retrieves Test message of process " + edge.getTo() + " from the queue");
-                                otherProcesses[edge.getFrom()].receive(message, edge);
-                            } catch (Exception e) {
-                                e.printStackTrace();
+
+                            QueuedMessage msg = new QueuedMessage(QueuedMessageType.TEST);
+                            messageQueue.add(msg);
+
+                            synchronized (msg)
+                            {
+                                try {
+                                    msg.wait();
+                                    System.out.println(id + " retrieves Test message of process " + edge.getTo() + " from the queue");
+                                    otherProcesses[edge.getFrom()].receive(message, edge);
+                                } catch (Exception e) {
+                                    e.printStackTrace();
+                                }
                             }
                         }
                     },
-                    (int) (Math.random() * 1000 + 1000));
+                    0);
             System.out.println(id + " appends Test message from process " + edge.getTo() + " to queue");
         }
         else {
@@ -437,15 +465,23 @@ public class IProcessImplementation extends UnicastRemoteObject implements IProc
                         new java.util.TimerTask() {
                             @Override
                             public void run() {
-                                try {
-                                    System.out.println(id + " retrieves Report message of process " + edge.getTo() + " from the queue");
-                                    otherProcesses[edge.getFrom()].receive(message, edge);
-                                } catch (Exception e) {
-                                    e.printStackTrace();
+
+                                QueuedMessage msg = new QueuedMessage(QueuedMessageType.REPORT);
+                                messageQueue.add(msg);
+
+                                synchronized (msg)
+                                {
+                                    try {
+                                        msg.wait();
+                                        System.out.println(id + " retrieves Report message of process " + edge.getTo() + " from the queue");
+                                        otherProcesses[edge.getFrom()].receive(message, edge);
+                                    } catch (Exception e) {
+                                        e.printStackTrace();
+                                    }
                                 }
                             }
                         },
-                        (int) (Math.random() * 1000 + 1000));
+                        0);
             } else {
                 if (message.getWeight() > bestWeight)
                     changeRoot();
