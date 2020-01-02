@@ -5,6 +5,8 @@ import Utils.Message;
 
 import java.rmi.Remote;
 import java.rmi.RemoteException;
+import java.util.List;
+import java.util.Map;
 import java.util.Queue;
 
 /**
@@ -45,5 +47,13 @@ public interface IProcess extends Remote {
     void addOtherProcesses(IProcess[] m) throws RemoteException;
 
     void addAdjacentEdges(Queue<Edge> edges) throws RemoteException;
+
+    public Map<String,Integer> getMetrics() throws RemoteException;
+
+    public Map<Double,Edge> getCores() throws RemoteException;
+
+    public Map<Double,Edge> getMST() throws RemoteException;
+
+    public Map<Integer, List<Edge>> getLevels() throws RemoteException;
 
 }

@@ -8,6 +8,8 @@ import Utils.MessageType;
 import java.rmi.RemoteException;
 import java.rmi.server.UnicastRemoteObject;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Remote Object Implementation
@@ -51,6 +53,29 @@ public class IProcessImplementation extends UnicastRemoteObject implements IProc
     private int findCount;
     private Map<Double, Long> lastDelayByEdge;
 
+    //Metrics
+    public AtomicInteger ConnectSent;
+    public AtomicInteger TestSent;
+    public AtomicInteger InitiateSent;
+    public AtomicInteger ReportSent;
+    public AtomicInteger AcceptSent;
+    public AtomicInteger RejectSent;
+    public AtomicInteger ChangeRootSent;
+    public AtomicInteger ConnectReceived;
+    public AtomicInteger TestReceived;
+    public AtomicInteger InitiateReceived;
+    public AtomicInteger ReportReceived;
+    public AtomicInteger AcceptReceived;
+    public AtomicInteger RejectReceived;
+    public AtomicInteger ChangeRootReceived;
+    public AtomicInteger merges;
+    public AtomicInteger absorbs;
+    public Map<Double, Edge> cores;
+    public Map<Double, Edge> mstEdges;
+    public Map<Integer, List<Edge>> levels;
+
+    private AtomicBoolean wasAlreadyReported = new AtomicBoolean(false);
+
     public IProcessImplementation(int id, String name, int machineId) throws RemoteException {
         super();
         this.id = id;
@@ -59,6 +84,29 @@ public class IProcessImplementation extends UnicastRemoteObject implements IProc
         this.fragmentName = id;
         this.fragmentLevel = 0;
         this.state = ProcessState.SLEEPING;
+        initializeMetrics();
+        cores = new HashMap<>();
+        mstEdges = new HashMap<>();
+        levels = new HashMap<>();
+    }
+
+    private void initializeMetrics() {
+        ConnectSent = new AtomicInteger(0);
+        TestSent = new AtomicInteger(0);
+        InitiateSent = new AtomicInteger(0);
+        ReportSent = new AtomicInteger(0);
+        AcceptSent = new AtomicInteger(0);
+        RejectSent = new AtomicInteger(0);
+        ChangeRootSent = new AtomicInteger(0);
+        ConnectReceived = new AtomicInteger(0);
+        TestReceived = new AtomicInteger(0);
+        InitiateReceived = new AtomicInteger(0);
+        ReportReceived = new AtomicInteger(0);
+        AcceptReceived = new AtomicInteger(0);
+        RejectReceived = new AtomicInteger(0);
+        ChangeRootReceived = new AtomicInteger(0);
+        merges = new AtomicInteger(0);
+        absorbs = new AtomicInteger(0);
     }
 
     @Override
@@ -72,6 +120,7 @@ public class IProcessImplementation extends UnicastRemoteObject implements IProc
 
         Edge edge = edges.peek();
         edge.setState(EdgeState.IN_MST);
+        mstEdges.put(edge.getWeight(), edge);
         System.out.println(id + " changes state of edge to " + edge.getTo() + " to IN_MST");
         System.out.println("(" + edge.getFrom() + "," + edge.getTo() + ") in MST.");
 
@@ -79,6 +128,7 @@ public class IProcessImplementation extends UnicastRemoteObject implements IProc
         findCount = 0;
         Message msg = new Message(MessageType.CONNECT, 0);
         System.out.println(id + " sends Connect to " + edge.getTo() + " - WakeUp");
+        ConnectSent.getAndIncrement();
         new java.util.Timer().schedule(
                 new java.util.TimerTask() {
                     @Override
@@ -99,24 +149,31 @@ public class IProcessImplementation extends UnicastRemoteObject implements IProc
         Edge oppositeEdge = getOppositeEdge(edge);
         switch (message.getType()) {
             case TEST:
+                TestReceived.getAndIncrement();
                 receiveTest(message, oppositeEdge);
                 break;
             case ACCEPT:
+                AcceptReceived.getAndIncrement();
                 receiveAccept(message, oppositeEdge);
                 break;
             case CONNECT:
+                ConnectReceived.getAndIncrement();
                 receiveConnect(message, oppositeEdge);
                 break;
             case INITIATE:
+                InitiateReceived.getAndIncrement();
                 receiveInitiate(message, oppositeEdge);
                 break;
             case REPORT:
+                ReportReceived.getAndIncrement();
                 receiveReport(message, oppositeEdge);
                 break;
             case REJECT:
+                RejectReceived.getAndIncrement();
                 receiveReject(message, oppositeEdge);
                 break;
             case CHANGE_ROOT:
+                ChangeRootReceived.getAndIncrement();
                 receiveChangeRoot(message, oppositeEdge);
                 break;
         }
@@ -134,6 +191,9 @@ public class IProcessImplementation extends UnicastRemoteObject implements IProc
             Message msg = new Message(MessageType.INITIATE, fragmentLevel, fragmentName, state);
             msg.setIsAbsorbMessage(true);
             System.out.println(id + " sends Initiate to " + edge.getTo());
+            mstEdges.put(edge.getWeight(), edge);
+            InitiateSent.getAndIncrement();
+            absorbs.getAndIncrement();
             new java.util.Timer().schedule(
                     new java.util.TimerTask() {
                         @Override
@@ -158,6 +218,7 @@ public class IProcessImplementation extends UnicastRemoteObject implements IProc
                             public void run() {
                                 try {
                                     System.out.println(id + " retrieves Connect message of process " + edge.getTo() + " from the queue");
+                                    ConnectReceived.getAndDecrement();
                                     otherProcesses[edge.getFrom()].receive(message, edge);
                                 } catch (Exception e) {
                                     e.printStackTrace();
@@ -170,6 +231,16 @@ public class IProcessImplementation extends UnicastRemoteObject implements IProc
 
                 Message msg = new Message(MessageType.INITIATE, fragmentLevel + 1, edge.getWeight(), ProcessState.FIND);
                 System.out.println(id + " sends Initiate to " + edge.getTo() + " with increased fragmentLevel");
+                InitiateSent.getAndIncrement();
+                merges.getAndIncrement();
+                cores.put(edge.getWeight(), edge);
+                List<Edge> tt;
+                if (levels.containsKey(fragmentLevel + 1))
+                    tt = levels.get(fragmentLevel + 1);
+                else
+                    tt = new ArrayList<Edge>();
+                tt.add(edge);
+                levels.put(fragmentLevel + 1, tt);
                 new java.util.Timer().schedule(
                         new java.util.TimerTask() {
                             @Override
@@ -205,7 +276,7 @@ public class IProcessImplementation extends UnicastRemoteObject implements IProc
                 System.out.println(id + " sends Initiate to " + e.getTo());
 
                 Message msg = new Message(MessageType.INITIATE, fragmentLevel, fragmentName, state);
-
+                InitiateSent.getAndIncrement();
                 new java.util.Timer().schedule(
                         new java.util.TimerTask() {
                             @Override
@@ -248,7 +319,7 @@ public class IProcessImplementation extends UnicastRemoteObject implements IProc
 
             Message msg = new Message(MessageType.TEST, fragmentLevel, fragmentName);
             Edge tmpTestEdge = new Edge(testEdge);
-
+            TestSent.getAndIncrement();
             new java.util.Timer().schedule(
                     new java.util.TimerTask() {
                         @Override
@@ -280,6 +351,7 @@ public class IProcessImplementation extends UnicastRemoteObject implements IProc
                         public void run() {
                             try {
                                 System.out.println(id + " retrieves Test message of process " + edge.getTo() + " from the queue");
+                                TestReceived.getAndDecrement();
                                 otherProcesses[edge.getFrom()].receive(message, edge);
                             } catch (Exception e) {
                                 e.printStackTrace();
@@ -293,6 +365,7 @@ public class IProcessImplementation extends UnicastRemoteObject implements IProc
             if (message.getFragmentName() != fragmentName) {
                 Message msg = new Message(MessageType.ACCEPT);
                 System.out.println(id + " sends Accept to process " + edge.getTo());
+                AcceptSent.getAndIncrement();
                 new java.util.Timer().schedule(
                         new java.util.TimerTask() {
                             @Override
@@ -314,6 +387,7 @@ public class IProcessImplementation extends UnicastRemoteObject implements IProc
                 if (testEdge == null || testEdge.compareTo(edge) != 0) {
                     Message msg = new Message(MessageType.REJECT);
                     System.out.println(id + " sends Reject to process " + edge.getTo());
+                    RejectSent.getAndIncrement();
                     new java.util.Timer().schedule(
                             new java.util.TimerTask() {
                                 @Override
@@ -369,7 +443,7 @@ public class IProcessImplementation extends UnicastRemoteObject implements IProc
             System.out.println(id + " sends Report to process " + inBranch.getTo());
 
             Edge tmpInBranch = new Edge(inBranch);
-
+            ReportSent.getAndIncrement();
             new java.util.Timer().schedule(
                     new java.util.TimerTask() {
                         @Override
@@ -402,20 +476,21 @@ public class IProcessImplementation extends UnicastRemoteObject implements IProc
         }
         else {
             if (state == ProcessState.FIND){
-                System.out.println(id + " appends Report message of process " + edge.getTo() + " to queue");
-                new java.util.Timer().schedule(
-                        new java.util.TimerTask() {
-                            @Override
-                            public void run() {
-                                try {
-                                    System.out.println(id + " retrieves Report message of process " + edge.getTo() + " from the queue");
-                                    otherProcesses[edge.getFrom()].receive(message, edge);
-                                } catch (Exception e) {
-                                    e.printStackTrace();
+                    System.out.println(id + " appends Report message of process " + edge.getTo() + " to queue");
+                    new java.util.Timer().schedule(
+                            new java.util.TimerTask() {
+                                @Override
+                                public void run() {
+                                    try {
+                                        System.out.println(id + " retrieves Report message of process " + edge.getTo() + " from the queue");
+                                        ReportReceived.getAndDecrement();
+                                        otherProcesses[edge.getFrom()].receive(message, edge);
+                                    } catch (Exception e) {
+                                        e.printStackTrace();
+                                    }
                                 }
-                            }
-                        },
-                        (int) (Math.random() * 1000 + 1000));
+                            },
+                            (int) (Math.random() * 1000 + 1000));
             } else {
                 if (message.getWeight() > bestWeight)
                     changeRoot();
@@ -425,6 +500,8 @@ public class IProcessImplementation extends UnicastRemoteObject implements IProc
                         //for (Edge e : edges)
                             //if (e.getState() == EdgeState.IN_MST)
                                 //System.out.println("(" + e.getFrom() + "," + e.getTo() + ") in MST.");
+                        System.out.println("Final level " + this.fragmentLevel);
+                        printStats();
                     }
                 }
             }
@@ -438,7 +515,7 @@ public class IProcessImplementation extends UnicastRemoteObject implements IProc
             System.out.println(id + " sends ChangeRoot message to process " + bestEdge.getTo());
 
             Edge tmpBestEdge = new Edge(bestEdge);
-
+            ChangeRootSent.getAndIncrement();
             new java.util.Timer().schedule(
                     new java.util.TimerTask() {
                         @Override
@@ -457,7 +534,7 @@ public class IProcessImplementation extends UnicastRemoteObject implements IProc
             System.out.println(id + " sends Connect message to process " + bestEdge.getTo() + " - ChangeRoot");
 
             Edge tmpBestEdge = new Edge(bestEdge);
-
+            ConnectSent.getAndIncrement();
             new java.util.Timer().schedule(
                     new java.util.TimerTask() {
                         @Override
@@ -472,6 +549,7 @@ public class IProcessImplementation extends UnicastRemoteObject implements IProc
                     getDelay(tmpBestEdge)
             );
             bestEdge.setState(EdgeState.IN_MST);
+            mstEdges.put(bestEdge.getWeight(), bestEdge);
             System.out.println("(" + bestEdge.getFrom() + "," + bestEdge.getTo() + ") in MST.");
         }
     }
@@ -543,4 +621,103 @@ public class IProcessImplementation extends UnicastRemoteObject implements IProc
         }
     }
 
+    @Override
+    public Map<String, Integer> getMetrics() throws RemoteException {
+        Map<String, Integer> stat = new HashMap<String, Integer>();
+        stat.put("ConnectSent", ConnectSent.get());
+        stat.put("InitiateSent", InitiateSent.get());
+        stat.put("AcceptSent", AcceptSent.get());
+        stat.put("RejectSent", RejectSent.get());
+        stat.put("TestSent", TestSent.get());
+        stat.put("ReportSent", ReportSent.get());
+        stat.put("ChangeRootSent", ChangeRootSent.get());
+        stat.put("ConnectReceived", ConnectReceived.get());
+        stat.put("InitiateReceived", InitiateReceived.get());
+        stat.put("AcceptReceived", AcceptReceived.get());
+        stat.put("RejectReceived", RejectReceived.get());
+        stat.put("TestReceived", TestReceived.get());
+        stat.put("ReportReceived", ReportReceived.get());
+        stat.put("ChangeRootReceived", ChangeRootReceived.get());
+        stat.put("Merges", merges.get());
+        stat.put("Absorbs", absorbs.get());
+        return stat;
+    }
+
+    public void printStats() throws RemoteException {
+        Map<String, Integer> stats = null;
+        Map<String, Integer> temp;
+        int t;
+        for (IProcess node : otherProcesses) {
+            if (node.getId() == id) {
+                temp = getMetrics();
+            } else {
+                temp = node.getMetrics();
+                for (Double w : node.getMST().keySet()) {
+                    if (!mstEdges.containsKey(w))
+                        mstEdges.put(w, node.getMST().get(w));
+                }
+                for (Double w : node.getCores().keySet()) {
+                    if (!cores.containsKey(w))
+                        cores.put(w, node.getCores().get(w));
+                }
+                for (int i : node.getLevels().keySet()) {
+                    if (!levels.containsKey(i)) {
+                        levels.put(i, node.getLevels().get(i));
+                    } else {
+                        List<Edge> tt;
+                        for (Edge l : node.getLevels().get(i)) {
+                            if (!levels.get(i).stream().anyMatch(p -> p.getWeight() == l.getWeight())) {
+                                tt = levels.get(i);
+                                tt.add(l);
+                                levels.put(i, tt);
+                            }
+                        }
+                    }
+                }
+            }
+            if (stats == null)
+                stats = new HashMap<>(temp);
+            else {
+                for (String k : stats.keySet()) {
+                    t = stats.get(k);
+                    stats.put(k, t + temp.get(k));
+                }
+            }
+        }
+        t = stats.get("Merges");
+        stats.put("Merges", t / 2);
+        presentStats(stats);
+    }
+
+    @Override
+    public Map<Double, Edge> getCores() throws RemoteException {
+        return cores;
+    }
+
+    @Override
+    public Map<Double, Edge> getMST() throws RemoteException {
+        return mstEdges;
+    }
+
+    @Override
+    public Map<Integer, List<Edge>> getLevels() throws RemoteException {
+        return levels;
+    }
+
+    private void presentStats(Map<String, Integer> stats) {
+        for (String k : stats.keySet()) {
+            System.out.println(k + ": " + stats.get(k));
+        }
+        System.out.println("---------- MST ----------");
+        for (Double w : mstEdges.keySet()) {
+            System.out.println("(" + mstEdges.get(w).getFrom() + " - " + mstEdges.get(w).getTo() + ")");
+        }
+        System.out.println("---------- Cores at each level ----------");
+        for (int l : levels.keySet()) {
+            System.out.println("At level " + l);
+            for (Edge e : levels.get(l)) {
+                System.out.println("(" + e.getFrom() + " - " + e.getTo() + ")");
+            }
+        }
+    }
 }

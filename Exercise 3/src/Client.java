@@ -85,7 +85,7 @@ public class Client {
     private static void readEdges() {
         Map<Integer, List<Edge>> edges = new HashMap<>();
         try {
-            BufferedReader br = new BufferedReader(new FileReader("inputFiles/edges3"));
+            BufferedReader br = new BufferedReader(new FileReader("inputFiles/edges25"));
             String line;
             int msgId = 0;
             while ((line = br.readLine()) != null) {
