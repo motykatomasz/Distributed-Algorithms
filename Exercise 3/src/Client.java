@@ -85,7 +85,7 @@ public class Client {
     private static void readEdges() {
         Map<Integer, List<Edge>> edges = new HashMap<>();
         try {
-            BufferedReader br = new BufferedReader(new FileReader("inputFiles/edges25"));
+            BufferedReader br = new BufferedReader(new FileReader("inputFiles/edges25_0,25"));
             String line;
             int msgId = 0;
             while ((line = br.readLine()) != null) {
@@ -93,22 +93,21 @@ public class Client {
                 int from = Integer.parseInt(split_line[0]);
                 int to = Integer.parseInt(split_line[1]);
                 double weight = Double.parseDouble(split_line[2]);
-                int deliveryTime = Integer.parseInt(split_line[3]);
 
                 if (!edges.containsKey(from)) {
                     List<Edge> t = new ArrayList<>();
-                    t.add(new Edge(EdgeState.CANDIDATE, from, to, weight, deliveryTime));
+                    t.add(new Edge(EdgeState.CANDIDATE, from, to, weight));
                     edges.put(from, t);
                 } else {
-                    edges.get(from).add(new Edge(EdgeState.CANDIDATE, from, to, weight, deliveryTime));
+                    edges.get(from).add(new Edge(EdgeState.CANDIDATE, from, to, weight));
                 }
 
                 if (!edges.containsKey(to)) {
                     List<Edge> t = new ArrayList<>();
-                    t.add(new Edge(EdgeState.CANDIDATE, to, from, weight, deliveryTime));
+                    t.add(new Edge(EdgeState.CANDIDATE, to, from, weight));
                     edges.put(to, t);
                 } else {
-                    edges.get(to).add(new Edge(EdgeState.CANDIDATE, to, from, weight, deliveryTime));
+                    edges.get(to).add(new Edge(EdgeState.CANDIDATE, to, from, weight));
                 }
 
             }

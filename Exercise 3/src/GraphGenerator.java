@@ -2,6 +2,7 @@ import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.util.Map;
 
 public class GraphGenerator {
 	
@@ -63,6 +64,7 @@ public class GraphGenerator {
 		
 		double weight;
 		double random;
+
 		for (int n1 = 1; n1 < nodes; n1++) {
 			for (int n2 = 0; n2 < n1; n2++) {
 				if (n1 == n2)

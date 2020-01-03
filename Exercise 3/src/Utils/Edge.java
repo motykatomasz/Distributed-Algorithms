@@ -18,24 +18,21 @@ public class Edge implements Serializable, Comparable{
     private int from;
     private int to;
     private double weight;
-    private int delay;
 
     public Edge() {
     }
 
-    public Edge(EdgeState s, int id1, int id2, double w, int d) {
+    public Edge(EdgeState s, int id1, int id2, double w) {
         state = s;
         from = id1;
         to = id2;
         weight = w;
-        delay = d;
     }
     public Edge(Edge edge){
         state = edge.getState();
         from = edge.getFrom();
         to = edge.getTo();
         weight = edge.getWeight();
-        delay = edge.getDelay();
     }
 
     public EdgeState getState() {
@@ -68,14 +65,6 @@ public class Edge implements Serializable, Comparable{
 
     public void setWeight(double weight) {
         this.weight = weight;
-    }
-
-    public int getDelay() {
-        return delay;
-    }
-
-    public void setDelay(int delay) {
-        this.delay = delay;
     }
 
     @Override

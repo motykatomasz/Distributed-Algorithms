@@ -225,7 +225,7 @@ public class IProcessImplementation extends UnicastRemoteObject implements IProc
                                 }
                             }
                         },
-                        (int) (Math.random() * 1000 + 1000));
+                        (int) (Math.random() * 1000 + 500));
                 System.out.println(id + " appends Connect message from process " + edge.getTo() + " to queue");
             } else {
 
@@ -358,10 +358,9 @@ public class IProcessImplementation extends UnicastRemoteObject implements IProc
                             }
                         }
                     },
-                    (int) (Math.random() * 1000 + 1000));
+                    (int) (Math.random() * 1000 + 500));
             System.out.println(id + " appends Test message from process " + edge.getTo() + " to queue");
-        }
-        else {
+        } else {
             if (message.getFragmentName() != fragmentName) {
                 Message msg = new Message(MessageType.ACCEPT);
                 System.out.println(id + " sends Accept to process " + edge.getTo());
@@ -379,8 +378,7 @@ public class IProcessImplementation extends UnicastRemoteObject implements IProc
                         },
                         getDelay(edge));
 
-            }
-            else {
+            } else {
                 if (EdgeState.CANDIDATE == edge.getState()) {
                     edge.setState(EdgeState.NOT_IN_MST);
                 }
@@ -399,9 +397,9 @@ public class IProcessImplementation extends UnicastRemoteObject implements IProc
                                     }
                                 }
                             },
+//                            delay);
                             getDelay(edge));
-                }
-                else {
+                } else {
                     test();
                 }
             }
@@ -464,42 +462,39 @@ public class IProcessImplementation extends UnicastRemoteObject implements IProc
     @Override
     public synchronized void receiveReport(Message message, Edge edge) throws RemoteException {
         System.out.println(id + " receives Report message from process " + edge.getTo());
-        if (edge.compareTo(inBranch) != 0){
+        if (edge.compareTo(inBranch) != 0) {
             findCount--;
             System.out.println(id + " decreases its FindCount");
-            if (message.getWeight() < bestWeight){
+            if (message.getWeight() < bestWeight) {
                 bestWeight = message.getWeight();
                 bestEdge = edge;
                 System.out.println(id + " found new best edge");
             }
             report();
-        }
-        else {
-            if (state == ProcessState.FIND){
-                    System.out.println(id + " appends Report message of process " + edge.getTo() + " to queue");
-                    new java.util.Timer().schedule(
-                            new java.util.TimerTask() {
-                                @Override
-                                public void run() {
-                                    try {
-                                        System.out.println(id + " retrieves Report message of process " + edge.getTo() + " from the queue");
-                                        ReportReceived.getAndDecrement();
-                                        otherProcesses[edge.getFrom()].receive(message, edge);
-                                    } catch (Exception e) {
-                                        e.printStackTrace();
-                                    }
+        } else {
+            if (state == ProcessState.FIND) {
+                System.out.println(id + " appends Report message of process " + edge.getTo() + " to queue");
+                new java.util.Timer().schedule(
+                        new java.util.TimerTask() {
+                            @Override
+                            public void run() {
+                                try {
+                                    System.out.println(id + " retrieves Report message of process " + edge.getTo() + " from the queue");
+                                    ReportReceived.getAndDecrement();
+                                    otherProcesses[edge.getFrom()].receive(message, edge);
+                                } catch (Exception e) {
+                                    e.printStackTrace();
                                 }
-                            },
-                            (int) (Math.random() * 1000 + 1000));
+                            }
+                        },
+                        (int) (Math.random() * 1000 + 500));
+
             } else {
                 if (message.getWeight() > bestWeight)
                     changeRoot();
                 else {
                     if (message.getWeight() == bestWeight && bestWeight == Double.POSITIVE_INFINITY) {
                         System.out.println("Process " + id + " HALTS.");
-                        //for (Edge e : edges)
-                            //if (e.getState() == EdgeState.IN_MST)
-                                //System.out.println("(" + e.getFrom() + "," + e.getTo() + ") in MST.");
                         System.out.println("Final level " + this.fragmentLevel);
                         printStats();
                     }
@@ -510,7 +505,7 @@ public class IProcessImplementation extends UnicastRemoteObject implements IProc
 
     @Override
     public synchronized void changeRoot() throws RemoteException {
-        if (bestEdge.getState() == EdgeState.IN_MST){
+        if (bestEdge.getState() == EdgeState.IN_MST) {
             Message msg = new Message(MessageType.CHANGE_ROOT);
             System.out.println(id + " sends ChangeRoot message to process " + bestEdge.getTo());
 
@@ -572,7 +567,7 @@ public class IProcessImplementation extends UnicastRemoteObject implements IProc
     private synchronized int getDelay(Edge edge) {
         long lastDelay = this.lastDelayByEdge.get(edge.getWeight());
         long currentTime = System.currentTimeMillis();
-        int newDelay = (int) (Math.random() * 2000 + 1000);
+        int newDelay = (int) (Math.random() * 1000 + 1000);
         long diff = (currentTime + newDelay) - lastDelay;
 
         if (diff < 0)
