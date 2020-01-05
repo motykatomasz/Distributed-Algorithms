@@ -2,15 +2,31 @@ package Utils;
 
 import java.io.Serializable;
 import java.util.Comparator;
+import java.util.Map;
 
 public class Edge implements Serializable, Comparable{
 
     private static final long serialVersionUID = 4608245581791590791L;
 
-    public static class EdgeComparator implements Comparator<Edge> {
+    public static class EdgeComparator implements Comparator<Double> {
+
+        Map<Double, Edge> base;
+
+        public EdgeComparator(Map<Double, Edge> base) {
+            this.base = base;
+        }
+
         @Override
-        public int compare(Edge o1, Edge o2) {
-            return o1.compareTo(o2);
+        public int compare(Double key1, Double key2) {
+                if (base.get(key1).getFrom() < base.get(key2).getFrom())
+                    return -1;
+                else if (base.get(key1).getFrom() > base.get(key2).getFrom())
+                    return 1;
+                else {
+                    if (base.get(key1).getTo() <= base.get(key2).getTo())
+                        return -1;
+                    else return 1;
+                }
         }
     }
 

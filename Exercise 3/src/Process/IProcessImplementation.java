@@ -72,6 +72,7 @@ public class IProcessImplementation extends UnicastRemoteObject implements IProc
     public AtomicInteger absorbs;
     public Map<Double, Edge> cores;
     public Map<Double, Edge> mstEdges;
+    public TreeMap<Double,Edge> sorted_mstEdges;
     public Map<Integer, List<Edge>> levels;
 
     private AtomicBoolean wasAlreadyReported = new AtomicBoolean(false);
@@ -87,6 +88,10 @@ public class IProcessImplementation extends UnicastRemoteObject implements IProc
         initializeMetrics();
         cores = new HashMap<>();
         mstEdges = new HashMap<>();
+        Edge.EdgeComparator comparator =  new Edge.EdgeComparator(mstEdges);
+        sorted_mstEdges = new TreeMap<>(comparator);
+
+
         levels = new HashMap<>();
     }
 
@@ -704,9 +709,19 @@ public class IProcessImplementation extends UnicastRemoteObject implements IProc
             System.out.println(k + ": " + stats.get(k));
         }
         System.out.println("---------- MST ----------");
-        for (Double w : mstEdges.keySet()) {
-            System.out.println("(" + mstEdges.get(w).getFrom() + " - " + mstEdges.get(w).getTo() + ")");
+        sorted_mstEdges.putAll(mstEdges);
+
+        for(Map.Entry<Double,Edge> entry : sorted_mstEdges.entrySet()) {
+            Edge value = entry.getValue();
+            if (value.getFrom() > value.getTo())
+                System.out.println("(" + value.getTo() + " - " + value.getFrom() + ")");
+            else System.out.println("(" + value.getFrom() + " - " + value.getTo() + ")");
         }
+
+        //for (Double w : mstEdges.keySet()) {
+        //    System.out.println("(" + mstEdges.get(w).getFrom() + " - " + mstEdges.get(w).getTo() + ")");
+        //}
+
         System.out.println("---------- Cores at each level ----------");
         for (int l : levels.keySet()) {
             System.out.println("At level " + l);

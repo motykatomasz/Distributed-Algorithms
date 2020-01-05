@@ -72,7 +72,8 @@ public class GraphGenerator {
 				random = Math.random();
 				if (random < edgeProbability) {
 					weight = (Math.random() * maxWeight + 1);
-					out.println(n1 + " " + n2 + " " + weight);
+					out.print(n1 + " " + n2);
+					out.printf(" %.2f\n", weight);
 				}
 			}
 		}
