@@ -625,18 +625,18 @@ public class IProcessImplementation extends UnicastRemoteObject implements IProc
     public Map<String, Integer> getMetrics() throws RemoteException {
         Map<String, Integer> stat = new HashMap<String, Integer>();
         stat.put("ConnectSent", ConnectSent.get());
-        stat.put("InitiateSent", InitiateSent.get());
-        stat.put("AcceptSent", AcceptSent.get());
-        stat.put("RejectSent", RejectSent.get());
-        stat.put("TestSent", TestSent.get());
-        stat.put("ReportSent", ReportSent.get());
-        stat.put("ChangeRootSent", ChangeRootSent.get());
         stat.put("ConnectReceived", ConnectReceived.get());
+        stat.put("InitiateSent", InitiateSent.get());
         stat.put("InitiateReceived", InitiateReceived.get());
-        stat.put("AcceptReceived", AcceptReceived.get());
-        stat.put("RejectReceived", RejectReceived.get());
+        stat.put("TestSent", TestSent.get());
         stat.put("TestReceived", TestReceived.get());
+        stat.put("AcceptSent", AcceptSent.get());
+        stat.put("AcceptReceived", AcceptReceived.get());
+        stat.put("RejectSent", RejectSent.get());
+        stat.put("RejectReceived", RejectReceived.get());
+        stat.put("ReportSent", ReportSent.get());
         stat.put("ReportReceived", ReportReceived.get());
+        stat.put("ChangeRootSent", ChangeRootSent.get());
         stat.put("ChangeRootReceived", ChangeRootReceived.get());
         stat.put("Merges", merges.get());
         stat.put("Absorbs", absorbs.get());
@@ -726,7 +726,10 @@ public class IProcessImplementation extends UnicastRemoteObject implements IProc
         for (int l : levels.keySet()) {
             System.out.println("At level " + l);
             for (Edge e : levels.get(l)) {
-                System.out.println("(" + e.getFrom() + " - " + e.getTo() + ")");
+                if (e.getFrom() > e.getTo())
+                    System.out.println("(" + e.getTo() + " - " + e.getFrom() + ")");
+                else System.out.println("(" + e.getFrom() + " - " + e.getTo() + ")");
+
             }
         }
     }
